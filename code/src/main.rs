@@ -146,6 +146,27 @@ fn main() {
                 }
                 std::process::exit(1);
             });
+            let mut trigs = Vec::new();
+            for dev in ctx.devices() {
+                if dev.is_trigger() {
+                    match dev.id() {
+                        Some(id) => trigs.push(id),
+                        None => (),
+                    }
+                } else {
+                    println!(
+                        "{} [{}]: {} channels",
+                        dev.id().unwrap_or_default(),
+                        dev.name().unwrap_or_default(),
+                        dev.num_channels()
+                    );
+                }
+            }
+            if !(trigs.is_empty()) {
+                for s in trigs {
+                    println!("triggr {}", s);
+                }
+            };
             loop {
                 s.send((Utc::now())).unwrap();
             }

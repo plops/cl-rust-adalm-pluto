@@ -256,6 +256,25 @@ panic = \"abort\"
 					     (unwrap_or_else (lambda (err_)
 							       ,(logprint "couldnt open iio context")
 							       (std--process--exit 1))))))
+			       (let* ((trigs (Vec--new)))
+				 (for (dev (ctx.devices))
+				      (if (dev.is_trigger)
+					(case (dev.id)
+					  ((Some id) (trigs.push id))
+					  (None "()"))
+					(println! (string "{} [{}]: {} channels")
+						  (dot dev
+						       (id)
+						       (unwrap_or_default))
+						  (dot dev
+						       (name)
+						       (unwrap_or_default))
+						  (dot dev
+						       (num_channels)))))
+				 (unless (trigs.is_empty)
+				   (for (s trigs)
+					(println! (string "triggr {}")
+						  s))))
 			       (loop
 				  (dot s
 				       (send
