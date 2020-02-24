@@ -20,14 +20,14 @@
 				  (loop for e in rest collect
 				       (format nil " ~a={:?}" (emit-rs :code e)))))
 		 #+nil (dot (SystemTime--now)
-		      (duration_since UNIX_EPOCH)
-		      (expect (string "time went backwards"))
-		      (as_micros))
+			    (duration_since UNIX_EPOCH)
+			    (expect (string "time went backwards"))
+			    (as_micros))
 		 (Utc--now)
 		 (file!)
 		 (line!)
 		 ,@(loop for e in rest collect
-			e ;`(dot ,e (display))
+		      e		;`(dot ,e (display))
 			))))
 
 
@@ -94,8 +94,6 @@ panic = \"abort\"
 		(std sync Mutex))
 	   
 
-	   ;(chrono::datetime::DateTime<chrono::offset::utc::Utc>, u64, u64, u64, u64, u64, u64, u64, u64, u64)
-	   
 	   (defstruct0 System
 	       (event_loop "EventLoop<()>")
 	     (display "glium::Display")
@@ -135,32 +133,17 @@ panic = \"abort\"
 		     (platform.attach_window (imgui.io_mut)
 					     &window
 					     "HiDpiMode::Rounded"))))
-	      #+Nil(let ((hidpi_facotr (platform.hidpi_factor))
-		     (font_size (* 13s0 hidpi_factor)))
-		 (declare (type f32 font_size))
-		 (dot imgui
-		      (fonts)
-		      (add_font
-		       (ref (list
-			     (make-instance "FontSource::DefaultFontData"
-					    :config (Some
-						     (make-instance
-						      FontConfig
-						      :size_pixels font_size
-						      "" ("..FontConfig::default"))))
-			     (make-instance "FontSource::TtfData"
-					    ))))))
-	      (let ((renderer (dot ("Renderer::init"
-				    "&mut imgui"
-				    &display)
-				   (expect (string "failed to initialize renderer")))))
-		(return (make-instance System
-				       event_loop
-				       display
-				       imgui
-				       platform
-				       renderer
-				       :font_size 12s0)))))
+	       (let ((renderer (dot ("Renderer::init"
+				     "&mut imgui"
+				     &display)
+				    (expect (string "failed to initialize renderer")))))
+		 (return (make-instance System
+					event_loop
+					display
+					imgui
+					platform
+					renderer
+					:font_size 12s0)))))
 
 
 	   (impl System
@@ -225,7 +208,7 @@ panic = \"abort\"
 				   (platform.handle_event (imgui.io_mut)
 							  (gl_window.window)
 							  &event)))))))))))
-	  
+	   
 	   (defun main ()
 	     (let (((values s r) (crossbeam_channel--bounded 4))
 		   (history (std--sync--Arc--new (Mutex--new (VecDeque--with_capacity 100)))))
@@ -254,130 +237,113 @@ panic = \"abort\"
 
 	       (progn
 		 (let ((core_ids (dot (core_affinity--get_core_ids)
-				      (unwrap))
-			 ))
-			   (for (a core_ids)
-				      ,(logprint "affinity" `(a))))
-		 (let (
-		       (b (dot (std--thread--Builder--new)
+				      (unwrap))))
+		   (for (a core_ids)
+			,(logprint "affinity" `(a))))
+		 (let ((b (dot (std--thread--Builder--new)
 			       (name (dot (string "pluto_reader")
 					  (into)))))
 		       (reader_thread
 			(b.spawn
-		    (space
-		     move
-		     (lambda ()
-		       (do0
-			(core_affinity--set_for_current (make-instance core_affinity--CoreId :id 0))
-			;; https://github.com/fpagliughi/rust-industrial-io/blob/master/examples/riio_detect.rs
-			(let ((ctx (dot (iio--Context--create_network (string "192.168.2.1"))
-					(unwrap_or_else (lambda (err_)
-							  ,(logprint "couldnt open iio context")
-							  (std--process--exit 1))))
-				))
-			 (loop
-			    (dot s
-				 (send
-				  (values (Utc--now)
-					  ))
-				 (unwrap)))))))))
-		       )
-		   		   
-		   
-		   
-		   )))
-	     #+nil (let* ((client (request--Client--new))
-			  (body (dot client
-				     (get (string "https://query1.finance.yahoo.com/v7/finance/quote?lang=en-US&region=US&corsDomain=finance.yahoo.com&symbols=DBX,LITE,AMD,INTC&fields=regularMarketPrice"))
-				     (? await)
-				     (text)
-				     (? await))))
-		     
-		     ,(logprint "stock" `(body)))
+			 (space
+			  move
+			  (lambda ()
+			    (do0
+			     (core_affinity--set_for_current (make-instance core_affinity--CoreId :id 0))
+			     ;; https://github.com/fpagliughi/rust-industrial-io/blob/master/examples/riio_detect.rs
+			     (let ((ctx (dot (iio--Context--create_network (string "192.168.2.1"))
+					     (unwrap_or_else (lambda (err_)
+							       ,(logprint "couldnt open iio context")
+							       (std--process--exit 1))))))
+			       (loop
+				  (dot s
+				       (send
+					(values (Utc--now)))
+				       (unwrap)))))))))))))
 	     (progn
-	      (let ((system (init (file!)))
-		    (history (dot history (clone))))
-		(system.main_loop
-		 (space  move
-			 (lambda (_ ui)
-			   (dot ("Window::new" (im_str! (string "Hello world")))
-				(size (list 300.0 100.0) "Condition::FirstUseEver")
-				(build ui
-				       (lambda ()
-					 (ui.text (im_str! (string "Hello World")))
-					 (let ((mouse_pos (dot ui
-							       (io)
-							       mouse_pos)))
-					   (ui.text (format!
-						     (string "mouse: ({:.1},{:.1})")
-						     (aref mouse_pos 0)
-						     (aref mouse_pos 1)))))))
-			   (dot ("Window::new" (im_str! (string "recv")))
-				(size (list 200.0 100.0)
-				      "Condition::FirstUseEver")
-				;; https://github.com/Gekkio/imgui-rs/blob/master/imgui-examples/examples/test_window_impl.rs
-				(build ui
-				       (lambda ()
-					 (let ((h_guard (dot history (lock) (unwrap)))
-					       (h (dot h_guard
-						       (Deref)
-						       ;(iter)
-						       )))
-					   (let* ((time "vec![Utc::now();h.len()]")
-						  (data_time_between_samples_ms "vec![0.0f32;h.len()]")
-						  )
+	       (let ((system (init (file!)))
+		     (history (dot history (clone))))
+		 (system.main_loop
+		  (space  move
+			  (lambda (_ ui)
+			    (dot ("Window::new" (im_str! (string "Hello world")))
+				 (size (list 300.0 100.0) "Condition::FirstUseEver")
+				 (build ui
+					(lambda ()
+					  (ui.text (im_str! (string "Hello World")))
+					  (let ((mouse_pos (dot ui
+								(io)
+								mouse_pos)))
+					    (ui.text (format!
+						      (string "mouse: ({:.1},{:.1})")
+						      (aref mouse_pos 0)
+						      (aref mouse_pos 1)))))))
+			    (dot ("Window::new" (im_str! (string "recv")))
+				 (size (list 200.0 100.0)
+				       "Condition::FirstUseEver")
+				 ;; https://github.com/Gekkio/imgui-rs/blob/master/imgui-examples/examples/test_window_impl.rs
+				 (build ui
+					(lambda ()
+					  (let ((h_guard (dot history (lock) (unwrap)))
+						(h (dot h_guard
+							(Deref)
+					;(iter)
+							)))
+					    (let* ((time "vec![Utc::now();h.len()]")
+						   (data_time_between_samples_ms "vec![0.0f32;h.len()]")
+						   )
 
-					     (let* ((i 0))
-					       (for (e h)
-						    (setf (aref time i) e.0)
-						    (if (== 0 i)
-							(setf (aref data_time_between_samples_ms i) 0s0)
-							(let ((duration #+nil
-								(dot (aref time i)
-									     (signed_duration_since
-									      (aref time (- i 1))))
-								(- (aref time i)
-								   (aref time (- i 1)))))
-							  ;; (as_fractional_millis)
-							  ;; (as_seconds)
-							  (case (dot
-								   duration
-								   (num_nanoseconds))
-							    ((Some a)
-							     (setf (aref data_time_between_samples_ms i)
-								   (* 1e-6 (coerce
-								     a
-								     f32))
-								   ))
-							    (t )))) 
-						    
-						(incf i)))
-					     
-					     ,@(loop for timescale in `(1000 8000) appending
-						    (loop for (name f) in `(("time_between_samples_ms" "_"))
-						       collect
-							 (let ((dat (format nil "data_~a" name)))
-							   `(progn
-							      (let* ((mi (aref ,dat 0))
-								     (ma (aref ,dat 0)))
-								(for (e (ref ,dat))
-								     (when (< *e mi)
-								       (setf mi *e))
-								     (when (< ma *e)
-								       (setf ma *e)))
-								(let ((label (im_str! (string ,(format nil "~a [unit] {:12.4?} {:12.4?}"
-												       name
-												       ))
-										      mi ma)))
-								  (dot ui (plot_lines
-									   &label
-									   (ref (aref ,dat
-										      (slice
-										       ;;std--cmp--max 0
-										       0 ;(- (dot ,dat (len)) ,timescale)
-										       
-										       (dot ,dat (len))))))
-											    (build))))))))))))))))))))))
+					      (let* ((i 0))
+						(for (e h)
+						     (setf (aref time i) e.0)
+						     (if (== 0 i)
+							 (setf (aref data_time_between_samples_ms i) 0s0)
+							 (let ((duration #+nil
+								 (dot (aref time i)
+								      (signed_duration_since
+								       (aref time (- i 1))))
+								 (- (aref time i)
+								    (aref time (- i 1)))))
+							   ;; (as_fractional_millis)
+							   ;; (as_seconds)
+							   (case (dot
+								  duration
+								  (num_nanoseconds))
+							     ((Some a)
+							      (setf (aref data_time_between_samples_ms i)
+								    (* 1e-6 (coerce
+									     a
+									     f32))
+								    ))
+							     (t )))) 
+						     
+						     (incf i)))
+					      
+					      ,@(loop for timescale in `(1000 8000) appending
+						     (loop for (name f) in `(("time_between_samples_ms" "_"))
+							collect
+							  (let ((dat (format nil "data_~a" name)))
+							    `(progn
+							       (let* ((mi (aref ,dat 0))
+								      (ma (aref ,dat 0)))
+								 (for (e (ref ,dat))
+								      (when (< *e mi)
+									(setf mi *e))
+								      (when (< ma *e)
+									(setf ma *e)))
+								 (let ((label (im_str! (string ,(format nil "~a [unit] {:12.4?} {:12.4?}"
+													name
+													))
+										       mi ma)))
+								   (dot ui (plot_lines
+									    &label
+									    (ref (aref ,dat
+										       (slice
+											;;std--cmp--max 0
+											0 ;(- (dot ,dat (len)) ,timescale)
+											
+											(dot ,dat (len))))))
+									(build))))))))))))))))))))))
 
     
     
