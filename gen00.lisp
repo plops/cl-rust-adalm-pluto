@@ -68,7 +68,7 @@ panic = \"abort\"
 	 `(do0
 	   (do0
 	    "extern crate core_affinity;"
-	    ;;"extern crate cpu_affinity;"
+	    "extern crate industrial_io as iio;"
 	    (use (std thread spawn))
 	    (use (std io))
 	    (use
@@ -248,7 +248,7 @@ panic = \"abort\"
 				    (dot
 				     h
 				     (push_back tup))
-				    (when (< 20000 (h.len))
+				    (when (< 100 (h.len))
 				      (h.pop_front))))))))))
 	       
 
@@ -269,14 +269,18 @@ panic = \"abort\"
 		     (lambda ()
 		       (do0
 			(core_affinity--set_for_current (make-instance core_affinity--CoreId :id 0))
-
-			
-			(loop
-			   (dot s
-				(send
-				 (values (Utc--now)
-					 ))
-				(unwrap))))))))
+			;; https://github.com/fpagliughi/rust-industrial-io/blob/master/examples/riio_detect.rs
+			(let ((ctx (dot (iio--Context--create_network (string "192.168.2.1"))
+					(unwrap_or_else (lambda (err_)
+							  ,(logprint "couldnt open iio context")
+							  (std--process--exit 1))))
+				))
+			 (loop
+			    (dot s
+				 (send
+				  (values (Utc--now)
+					  ))
+				 (unwrap)))))))))
 		       )
 		   		   
 		   
@@ -361,29 +365,9 @@ panic = \"abort\"
 								       (setf mi *e))
 								     (when (< ma *e)
 								       (setf ma *e)))
-								(let ((label (im_str! (string ,(format nil "~a [~a] {:12.4?} {:12.4?}"
+								(let ((label (im_str! (string ,(format nil "~a [unit] {:12.4?} {:12.4?}"
 												       name
-												       (cond
-													 ((member name `(SVI2_C_Core
-															 SVI2_C_SoC
-															 ))
-													  "A")
-													 ((member name `(SVI2_Core
-															 SVI2_SoC
-															 ))
-													  "V")
-													 ((member name `(SVI2_C_Core
-															 SVI2_C_SoC
-															 SVI2_Core
-															 SVI2_SoC
-															 Tdie
-															 Tctl
-															 Tccd1))
-													  "degC")
-													 ((member name `(SVI2_P_Core
-															 SVI2_P_SoC))
-													  "W")
-													 (t "-"))))
+												       ))
 										      mi ma)))
 								  (dot ui (plot_lines
 									   &label

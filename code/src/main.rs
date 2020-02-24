@@ -1,4 +1,5 @@
 extern crate core_affinity;
+extern crate industrial_io as iio;
 use chrono::{DateTime, Utc};
 use crossbeam_channel::bounded;
 use glium::glutin;
@@ -119,7 +120,7 @@ fn main() {
                 let tup = r.recv().ok().unwrap();
                 let mut h = history.lock().unwrap();
                 h.push_back(tup);
-                if 20000 < h.len() {
+                if 100 < h.len() {
                     h.pop_front();
                 };
             }
@@ -135,6 +136,17 @@ fn main() {
         let b = std::thread::Builder::new().name("pluto_reader".into());
         let reader_thread = b.spawn(move || {
             core_affinity::set_for_current(core_affinity::CoreId { id: 0 });
+            let ctx = iio::Context::create_network("192.168.2.1").unwrap_or_else(|err_| {
+                {
+                    println!(
+                        "{} {}:{} couldnt open iio context ",
+                        Utc::now(),
+                        file!(),
+                        line!()
+                    );
+                }
+                std::process::exit(1);
+            });
             loop {
                 s.send((Utc::now())).unwrap();
             }
@@ -186,7 +198,7 @@ fn main() {
                             };
                         }
                         let label =
-                            im_str!("time_between_samples_ms [-] {:12.4?} {:12.4?}", mi, ma);
+                            im_str!("time_between_samples_ms [unit] {:12.4?} {:12.4?}", mi, ma);
                         ui.plot_lines(
                             &label,
                             &(data_time_between_samples_ms[0..data_time_between_samples_ms.len()]),
@@ -205,7 +217,7 @@ fn main() {
                             };
                         }
                         let label =
-                            im_str!("time_between_samples_ms [-] {:12.4?} {:12.4?}", mi, ma);
+                            im_str!("time_between_samples_ms [unit] {:12.4?} {:12.4?}", mi, ma);
                         ui.plot_lines(
                             &label,
                             &(data_time_between_samples_ms[0..data_time_between_samples_ms.len()]),
