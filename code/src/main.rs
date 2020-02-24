@@ -11,7 +11,6 @@ use imgui::*;
 use imgui::{Context, FontConfig, FontGlyphRanges, FontSource, Ui};
 use imgui_glium_renderer::Renderer;
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
-use positioned_io::ReadAt;
 use std::collections::VecDeque;
 use std::fs::File;
 use std::io;
@@ -162,68 +161,6 @@ fn main() {
                     ui.text(im_str!("Hello World"));
                     let mouse_pos = ui.io().mouse_pos;
                     ui.text(format!("mouse: ({:.1},{:.1})", mouse_pos[0], mouse_pos[1]));
-                });
-            Window::new(im_str!("recv"))
-                .size([2.00e+2, 1.00e+2], Condition::FirstUseEver)
-                .build(ui, || {
-                    let h_guard = history.lock().unwrap();
-                    let h = h_guard.Deref();
-                    let mut time = vec![Utc::now(); h.len()];
-                    let mut data_time_between_samples_ms = vec![0.0f32; h.len()];
-                    let mut i = 0;
-                    for e in h {
-                        time[i] = e.0;
-                        if (0) == (i) {
-                            data_time_between_samples_ms[i] = 0.;
-                        } else {
-                            let duration = (time[i] - time[(i - 1)]);
-                            match duration.num_nanoseconds() {
-                                Some(a) => {
-                                    data_time_between_samples_ms[i] = ((1.00e-6) * (a as f32));
-                                }
-                                _ => {}
-                            };
-                        }
-                        i += 1;
-                    }
-                    {
-                        let mut mi = data_time_between_samples_ms[0];
-                        let mut ma = data_time_between_samples_ms[0];
-                        for e in &(data_time_between_samples_ms) {
-                            if *e < mi {
-                                mi = *e;
-                            };
-                            if ma < *e {
-                                ma = *e;
-                            };
-                        }
-                        let label =
-                            im_str!("time_between_samples_ms [unit] {:12.4?} {:12.4?}", mi, ma);
-                        ui.plot_lines(
-                            &label,
-                            &(data_time_between_samples_ms[0..data_time_between_samples_ms.len()]),
-                        )
-                        .build();
-                    }
-                    {
-                        let mut mi = data_time_between_samples_ms[0];
-                        let mut ma = data_time_between_samples_ms[0];
-                        for e in &(data_time_between_samples_ms) {
-                            if *e < mi {
-                                mi = *e;
-                            };
-                            if ma < *e {
-                                ma = *e;
-                            };
-                        }
-                        let label =
-                            im_str!("time_between_samples_ms [unit] {:12.4?} {:12.4?}", mi, ma);
-                        ui.plot_lines(
-                            &label,
-                            &(data_time_between_samples_ms[0..data_time_between_samples_ms.len()]),
-                        )
-                        .build();
-                    };
                 });
         });
     }

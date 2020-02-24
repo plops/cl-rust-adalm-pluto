@@ -87,7 +87,8 @@ panic = \"abort\"
 	   (use (std (curly thread time fs))
 		(std fs File)
 		(std time Instant)
-		(positioned_io ReadAt))
+		;(positioned_io ReadAt)
+		)
 
 	   (use (crossbeam_channel bounded)
 		(std collections VecDeque)
@@ -278,18 +279,19 @@ panic = \"abort\"
 						      (string "mouse: ({:.1},{:.1})")
 						      (aref mouse_pos 0)
 						      (aref mouse_pos 1)))))))
-			    (dot ("Window::new" (im_str! (string "recv")))
+			    #+nil (dot ("Window::new" (im_str! (string "recv")))
 				 (size (list 200.0 100.0)
 				       "Condition::FirstUseEver")
 				 ;; https://github.com/Gekkio/imgui-rs/blob/master/imgui-examples/examples/test_window_impl.rs
-				 (build ui
+				 #(build ui
 					(lambda ()
 					  (let ((h_guard (dot history (lock) (unwrap)))
+						#+nil
 						(h (dot h_guard
 							(Deref)
 					;(iter)
 							)))
-					    (let* ((time "vec![Utc::now();h.len()]")
+					    #+nil (let* ((time "vec![Utc::now();h.len()]")
 						   (data_time_between_samples_ms "vec![0.0f32;h.len()]")
 						   )
 
@@ -319,7 +321,7 @@ panic = \"abort\"
 						     
 						     (incf i)))
 					      
-					      ,@(loop for timescale in `(1000 8000) appending
+					      ,@(loop for timescale in `(100) appending
 						     (loop for (name f) in `(("time_between_samples_ms" "_"))
 							collect
 							  (let ((dat (format nil "data_~a" name)))
