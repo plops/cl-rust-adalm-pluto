@@ -300,8 +300,12 @@ panic = \"abort\"
 				       ,(logprint "no 16 bit channels found" `())
 				       (std--process--exit 1))
 				      ,(logprint "16 bit channels found" `(nchan))))
+
+				;; https://users.rust-lang.org/t/sharing-buffer-between-threads-without-locking/10508
+				;; https://docs.rs/triple_buffer/5.0.4/triple_buffer/
+				;; https://medium.com/@polyglot_factotum/rust-concurrency-patterns-communicate-by-sharing-your-sender-11a496ce7791
 				(let* ((buf (dot dev
-						 (create_buffer 8 false)
+						 (create_buffer 512 false)
 						 (unwrap_or_else (lambda (err_)
 								   ,(logprint "can't create buffer" `())
 								   (std--process--exit 3))))))

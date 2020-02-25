@@ -221,7 +221,7 @@ fn main() {
                     );
                 }
             };
-            let mut buf = dev.create_buffer(8, false).unwrap_or_else(|err_| {
+            let mut buf = dev.create_buffer(512, false).unwrap_or_else(|err_| {
                 {
                     println!(
                         "{} {}:{} can't create buffer ",
