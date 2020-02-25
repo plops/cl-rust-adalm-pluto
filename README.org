@@ -6,3 +6,4 @@ Rust code to read out data from Adalm Pluto Software Defined Radio.
 * References
 
 - https://github.com/fpagliughi/rust-industrial-io/blob/master/examples/riio_detect.rs
+- https://github.com/plops/learn_py_iio

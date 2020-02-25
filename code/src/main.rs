@@ -162,9 +162,52 @@ fn main() {
                     );
                 }
             }
-            if !(trigs.is_empty()) {
+            if trigs.is_empty() {
+                {
+                    println!("{} {}:{} no triggers ", Utc::now(), file!(), line!());
+                }
+            } else {
                 for s in trigs {
                     println!("triggr {}", s);
+                }
+            };
+            let dev = ctx.find_device("cf-ad9361-lpc").unwrap_or_else(|| {
+                {
+                    println!(
+                        "{} {}:{} no device named cf-ad9361-lpc ",
+                        Utc::now(),
+                        file!(),
+                        line!()
+                    );
+                }
+                std::process::exit(1);
+            });
+            let phy = ctx.find_device("ad9361-phy").unwrap_or_else(|| {
+                {
+                    println!(
+                        "{} {}:{} no device named ad9361-phy ",
+                        Utc::now(),
+                        file!(),
+                        line!()
+                    );
+                }
+                std::process::exit(1);
+            });
+            let mut nchan = 0;
+            for mut chan in dev.channels() {
+                if (Some(std::any::TypeId::of::<u16>())) == (chan.type_of()) {
+                    nchan += 1;
+                    chan.enable();
+                };
+            }
+            if (0) == (nchan) {
+                {
+                    println!(
+                        "{} {}:{} no 16 bit channels found ",
+                        Utc::now(),
+                        file!(),
+                        line!()
+                    );
                 }
             };
             loop {

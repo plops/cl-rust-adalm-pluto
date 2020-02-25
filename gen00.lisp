@@ -271,10 +271,32 @@ panic = \"abort\"
 						       (unwrap_or_default))
 						  (dot dev
 						       (num_channels)))))
-				 (unless (trigs.is_empty)
-				   (for (s trigs)
-					(println! (string "triggr {}")
-						  s))))
+				 
+				 (if (trigs.is_empty)
+				     ,(logprint "no triggers" `())
+				     (for (s trigs)
+					  (println! (string "triggr {}")
+						    s))))
+
+			       (let (,@ (loop for (var name) in `((dev cf-ad9361-lpc)
+								  (phy ad9361-phy))
+					   collect
+					     `(,var (dot ctx
+							(find_device (string ,name))
+							(unwrap_or_else
+							 (lambda ()
+							   ,(logprint (format nil "no device named ~a" name) `())
+							   (std--process--exit 1))))))
+				     )
+
+				(let* ((nchan 0))
+				  (for ("mut chan" (dev.channels))
+				       (when (== (Some (std--any--TypeId--of--<u16>))
+						 (chan.type_of))
+					 (incf nchan)
+					 (chan.enable)))
+				  (when (== 0 nchan)
+				    ,(logprint "no 16 bit channels found" `()))))
 			       (loop
 				  (dot s
 				       (send
