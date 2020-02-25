@@ -332,7 +332,7 @@ panic = \"abort\"
 
 
 					 (progn
-					  (let ((fftin_guard (dot (aref fftin count)
+					  (let* ((fftin_guard (dot (aref fftin count)
 								  (clone)))
 						(fftin_array (dot fftin_guard
 								  (lock)
@@ -354,7 +354,9 @@ panic = \"abort\"
 						    (send
 						     (values (Utc--now)
 							     count
-							     (ref (aref fftin count))))
+							     (dot (aref fftin count)
+								  (clone))
+							     ))
 						    (unwrap))
 					 (incf count)
 					 (when (<= ,n-buf count)

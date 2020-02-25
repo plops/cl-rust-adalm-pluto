@@ -261,8 +261,8 @@ fn main() {
                     _ => (),
                 }
                 {
-                    let fftin_guard = fftin[count].clone();
-                    let fftin_array = fftin_guard.lock().unwrap();
+                    let mut fftin_guard = fftin[count].clone();
+                    let mut fftin_array = fftin_guard.lock().unwrap();
                     let data_i: Vec<i16> = buf.channel_iter::<i16>(&(chans[0])).collect();
                     let data_q: Vec<i16> = buf.channel_iter::<i16>(&(chans[1])).collect();
                     for i in 0..512 {
@@ -270,7 +270,7 @@ fn main() {
                             fftw::types::c64::new((data_i[i] as f64), (data_q[i] as f64));
                     }
                 }
-                s.send((Utc::now(), count, &(fftin[count]))).unwrap();
+                s.send((Utc::now(), count, fftin[count].clone())).unwrap();
                 count += 1;
                 if (3) <= (count) {
                     count = 0;
