@@ -316,9 +316,11 @@ panic = \"abort\"
 						     (unwrap_or_else (lambda (err)
 								       ,(logprint (format nil "can't create buffer") `(err))
 								       (std--process--exit 3)))))
-					   (fftin (fftw--array--AlignedVec--new ,n-samples))
+					   (fftin (list ,@(loop for i below n-buf collect
+							       `(std--sync--Arc--new (Mutex--new (fftw--array--AlignedVec--new ,n-samples))))))
 
-					   (chans (Vec--new)))
+					   (chans (Vec--new))
+					   (count 0))
 				      (for (ch (dev.channels))
 					   (chans.push ch))
 				      (loop
@@ -328,30 +330,35 @@ panic = \"abort\"
 						  (std--process--exit 4))
 					   (t "()"))
 
-					 
-					 
-					 (let (
-					       (data_i (dot buf
-							    (channel_iter--<i16> (ref (aref chans 0)))
+
+					 (progn
+					  (let ((fftin_guard (dot (aref fftin count)
+								  (clone)))
+						(fftin_array (dot fftin_guard
+								  (lock)
+								  (unwrap))))
+					    (let ((data_i (dot buf
+							       (channel_iter--<i16> (ref (aref chans 0)))
 							       (collect)))
-					       (data_q (dot buf
-							    (channel_iter--<i16> (ref (aref chans 1)))
-							    (collect))))
-					   (declare (type Vec<i16> data_i data_q))
-					   (for (i (slice 0 ,n-samples))
-						(setf (aref fftin i) (fftw--types--c64--new (coerce (aref data_i i)
-												    f64)
-											    (coerce (aref data_q i)
-												    f64))))
-					   #+nil
-					   ,(logprint "collect" `((dot chan
-								       (id)
-								       (unwrap_or_default))
-								  data)))
+						  (data_q (dot buf
+							       (channel_iter--<i16> (ref (aref chans 1)))
+							       (collect))))
+					      (declare (type Vec<i16> data_i data_q))
+					      (for (i (slice 0 ,n-samples))
+						   (setf (aref fftin_array i) (fftw--types--c64--new (coerce (aref data_i i)
+													     f64)
+												     (coerce (aref data_q i)
+													     f64)))))))
+					 
 					 (dot s
 						    (send
-						     (values (Utc--now)))
-						    (unwrap)))))))))))))))))
+						     (values (Utc--now)
+							     count
+							     (ref (aref fftin count))))
+						    (unwrap))
+					 (incf count)
+					 (when (<= ,n-buf count)
+					   (setf count 0)))))))))))))))))
 	     (progn
 	       (let ((system (init (file!)))
 		     (history (dot history (clone))))

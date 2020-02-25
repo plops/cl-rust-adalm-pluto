@@ -234,8 +234,13 @@ fn main() {
                 }
                 std::process::exit(3);
             });
-            let mut fftin = fftw::array::AlignedVec::new(512);
+            let mut fftin = [
+                std::sync::Arc::new(Mutex::new(fftw::array::AlignedVec::new(512))),
+                std::sync::Arc::new(Mutex::new(fftw::array::AlignedVec::new(512))),
+                std::sync::Arc::new(Mutex::new(fftw::array::AlignedVec::new(512))),
+            ];
             let mut chans = Vec::new();
+            let mut count = 0;
             for ch in dev.channels() {
                 chans.push(ch);
             }
@@ -255,12 +260,21 @@ fn main() {
                     }
                     _ => (),
                 }
-                let data_i: Vec<i16> = buf.channel_iter::<i16>(&(chans[0])).collect();
-                let data_q: Vec<i16> = buf.channel_iter::<i16>(&(chans[1])).collect();
-                for i in 0..512 {
-                    fftin[i] = fftw::types::c64::new((data_i[i] as f64), (data_q[i] as f64));
+                {
+                    let fftin_guard = fftin[count].clone();
+                    let fftin_array = fftin_guard.lock().unwrap();
+                    let data_i: Vec<i16> = buf.channel_iter::<i16>(&(chans[0])).collect();
+                    let data_q: Vec<i16> = buf.channel_iter::<i16>(&(chans[1])).collect();
+                    for i in 0..512 {
+                        fftin_array[i] =
+                            fftw::types::c64::new((data_i[i] as f64), (data_q[i] as f64));
+                    }
                 }
-                s.send((Utc::now())).unwrap();
+                s.send((Utc::now(), count, &(fftin[count]))).unwrap();
+                count += 1;
+                if (3) <= (count) {
+                    count = 0;
+                };
             }
         });
     };
