@@ -180,7 +180,7 @@ fn main() {
                         line!()
                     );
                 }
-                std::process::exit(1);
+                std::process::exit(2);
             });
             let phy = ctx.find_device("ad9361-phy").unwrap_or_else(|| {
                 {
@@ -191,11 +191,11 @@ fn main() {
                         line!()
                     );
                 }
-                std::process::exit(1);
+                std::process::exit(2);
             });
             let mut nchan = 0;
             for mut chan in dev.channels() {
-                if (Some(std::any::TypeId::of::<u16>())) == (chan.type_of()) {
+                if (Some(std::any::TypeId::of::<i16>())) == (chan.type_of()) {
                     nchan += 1;
                     chan.enable();
                 };
@@ -209,8 +209,58 @@ fn main() {
                         line!()
                     );
                 }
+                std::process::exit(1);
+            } else {
+                {
+                    println!(
+                        "{} {}:{} 16 bit channels found  nchan={:?}",
+                        Utc::now(),
+                        file!(),
+                        line!(),
+                        nchan
+                    );
+                }
             };
+            let mut buf = dev.create_buffer(8, false).unwrap_or_else(|err_| {
+                {
+                    println!(
+                        "{} {}:{} can't create buffer ",
+                        Utc::now(),
+                        file!(),
+                        line!()
+                    );
+                }
+                std::process::exit(3);
+            });
             loop {
+                match buf.refill() {
+                    Err(err) => {
+                        {
+                            println!(
+                                "{} {}:{} error filling buffer  err={:?}",
+                                Utc::now(),
+                                file!(),
+                                line!(),
+                                err
+                            );
+                        }
+                        std::process::exit(4)
+                    }
+                    _ => (),
+                }
+                for chan in dev.channels() {
+                    let data: Vec<i16> = buf.channel_iter::<i16>(&chan).collect();
+                    {
+                        println!(
+                            "{} {}:{} collect  chan.id().unwrap_or_default()={:?}  data={:?}",
+                            Utc::now(),
+                            file!(),
+                            line!(),
+                            chan.id().unwrap_or_default(),
+                            data
+                        );
+                    };
+                }
                 s.send((Utc::now())).unwrap();
             }
         });

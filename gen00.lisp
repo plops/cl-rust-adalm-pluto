@@ -286,22 +286,44 @@ panic = \"abort\"
 							(unwrap_or_else
 							 (lambda ()
 							   ,(logprint (format nil "no device named ~a" name) `())
-							   (std--process--exit 1))))))
+							   (std--process--exit 2))))))
 				     )
 
 				(let* ((nchan 0))
 				  (for ("mut chan" (dev.channels))
-				       (when (== (Some (std--any--TypeId--of--<u16>))
+				       (when (== (Some (std--any--TypeId--of--<i16>))
 						 (chan.type_of))
 					 (incf nchan)
 					 (chan.enable)))
-				  (when (== 0 nchan)
-				    ,(logprint "no 16 bit channels found" `()))))
-			       (loop
-				  (dot s
-				       (send
-					(values (Utc--now)))
-				       (unwrap)))))))))))))
+				  (if (== 0 nchan)
+				      (do0
+				       ,(logprint "no 16 bit channels found" `())
+				       (std--process--exit 1))
+				      ,(logprint "16 bit channels found" `(nchan))))
+				(let* ((buf (dot dev
+						 (create_buffer 8 false)
+						 (unwrap_or_else (lambda (err_)
+								   ,(logprint "can't create buffer" `())
+								   (std--process--exit 3))))))
+				  (loop
+				     (case (buf.refill)
+				       ((Err err)
+					,(logprint "error filling buffer" `(err))
+					(std--process--exit 4))
+				       (t "()"))
+				     (for (chan (dev.channels))
+					  (let ((data (dot buf
+							   (channel_iter--<i16> &chan)
+							   (collect))))
+					    (declare (type Vec<i16> data))
+					    ,(logprint "collect" `((dot chan
+									(id)
+									(unwrap_or_default))
+								   data))))
+				     (dot s
+					  (send
+					   (values (Utc--now)))
+					  (unwrap)))))))))))))))
 	     (progn
 	       (let ((system (init (file!)))
 		     (history (dot history (clone))))
