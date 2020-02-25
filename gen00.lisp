@@ -56,6 +56,7 @@ crossbeam-channel = \"*\"
 #positioned-io = \"*\"
 core_affinity = \"*\"
 industrial-io = \"*\" # 0.2.0
+fftw = \"*\"
 
 # this shaves 1MB off the binary
 [profile.release]
@@ -92,7 +93,8 @@ panic = \"abort\"
 
 	   (use (crossbeam_channel bounded)
 		(std collections VecDeque)
-		(std sync Mutex))
+		(std sync Mutex)
+		(fftw))
 	   
 
 	   (defstruct0 System
@@ -211,7 +213,7 @@ panic = \"abort\"
 							  &event)))))))))))
 	   
 	   (defun main ()
-	     (let (((values s r) (crossbeam_channel--bounded 4))
+	     (let (((values s r) (crossbeam_channel--bounded 3))
 		   (history (std--sync--Arc--new (Mutex--new (VecDeque--with_capacity 100)))))
 	       (progn
 		 (let ((b (dot (std--thread--Builder--new)
@@ -304,30 +306,52 @@ panic = \"abort\"
 				;; https://users.rust-lang.org/t/sharing-buffer-between-threads-without-locking/10508
 				;; https://docs.rs/triple_buffer/5.0.4/triple_buffer/
 				;; https://medium.com/@polyglot_factotum/rust-concurrency-patterns-communicate-by-sharing-your-sender-11a496ce7791
-				(let* ((buf (dot dev
-						 (create_buffer 512 false)
-						 (unwrap_or_else (lambda (err_)
-								   ,(logprint "can't create buffer" `())
-								   (std--process--exit 3))))))
-				  (loop
-				     (case (buf.refill)
-				       ((Err err)
-					,(logprint "error filling buffer" `(err))
-					(std--process--exit 4))
-				       (t "()"))
-				     (for (chan (dev.channels))
-					  (let ((data (dot buf
-							   (channel_iter--<i16> &chan)
-							   (collect))))
-					    (declare (type Vec<i16> data))
-					    ,(logprint "collect" `((dot chan
-									(id)
-									(unwrap_or_default))
-								   data))))
-				     (dot s
-					  (send
-					   (values (Utc--now)))
-					  (unwrap)))))))))))))))
+				;; https://wiki.analog.com/resources/tools-software/linux-software/libiio_internals
+				,(let ((n-buf 3)
+				       (n-samples 512))
+				  `(do0 
+				    (let* ((buf (dot dev
+							;; cyclic buffer only makes sense for output (to repeat waveform)
+						     (create_buffer ,n-samples false)
+						     (unwrap_or_else (lambda (err)
+								       ,(logprint (format nil "can't create buffer") `(err))
+								       (std--process--exit 3)))))
+					   (fftin (fftw--array--AlignedVec--new ,n-samples))
+
+					   (chans (Vec--new)))
+				      (for (ch (dev.channels))
+					   (chans.push ch))
+				      (loop
+					 (case (buf.refill)
+					   ((Err err)
+						  ,(logprint "error filling buffer" `(err))
+						  (std--process--exit 4))
+					   (t "()"))
+
+					 
+					 
+					 (let (
+					       (data_i (dot buf
+							    (channel_iter--<i16> (ref (aref chans 0)))
+							       (collect)))
+					       (data_q (dot buf
+							    (channel_iter--<i16> (ref (aref chans 1)))
+							    (collect))))
+					   (declare (type Vec<i16> data_i data_q))
+					   (for (i (slice 0 ,n-samples))
+						(setf (aref fftin i) (fftw--types--c64--new (coerce (aref data_i i)
+												    f64)
+											    (coerce (aref data_q i)
+												    f64))))
+					   #+nil
+					   ,(logprint "collect" `((dot chan
+								       (id)
+								       (unwrap_or_default))
+								  data)))
+					 (dot s
+						    (send
+						     (values (Utc--now)))
+						    (unwrap)))))))))))))))))
 	     (progn
 	       (let ((system (init (file!)))
 		     (history (dot history (clone))))

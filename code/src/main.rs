@@ -2,6 +2,7 @@ extern crate core_affinity;
 extern crate industrial_io as iio;
 use chrono::{DateTime, Utc};
 use crossbeam_channel::bounded;
+use fftw;
 use glium::glutin;
 use glium::glutin::event::{Event, WindowEvent};
 use glium::glutin::event_loop::{ControlFlow, EventLoop};
@@ -109,7 +110,7 @@ impl System {
     }
 }
 fn main() {
-    let (s, r) = crossbeam_channel::bounded(4);
+    let (s, r) = crossbeam_channel::bounded(3);
     let history = std::sync::Arc::new(Mutex::new(VecDeque::with_capacity(100)));
     {
         let b = std::thread::Builder::new().name("deque_writer".into());
@@ -221,17 +222,23 @@ fn main() {
                     );
                 }
             };
-            let mut buf = dev.create_buffer(512, false).unwrap_or_else(|err_| {
+            let mut buf = dev.create_buffer(512, false).unwrap_or_else(|err| {
                 {
                     println!(
-                        "{} {}:{} can't create buffer ",
+                        "{} {}:{} can't create buffer  err={:?}",
                         Utc::now(),
                         file!(),
-                        line!()
+                        line!(),
+                        err
                     );
                 }
                 std::process::exit(3);
             });
+            let mut fftin = fftw::array::AlignedVec::new(512);
+            let mut chans = Vec::new();
+            for ch in dev.channels() {
+                chans.push(ch);
+            }
             loop {
                 match buf.refill() {
                     Err(err) => {
@@ -248,18 +255,10 @@ fn main() {
                     }
                     _ => (),
                 }
-                for chan in dev.channels() {
-                    let data: Vec<i16> = buf.channel_iter::<i16>(&chan).collect();
-                    {
-                        println!(
-                            "{} {}:{} collect  chan.id().unwrap_or_default()={:?}  data={:?}",
-                            Utc::now(),
-                            file!(),
-                            line!(),
-                            chan.id().unwrap_or_default(),
-                            data
-                        );
-                    };
+                let data_i: Vec<i16> = buf.channel_iter::<i16>(&(chans[0])).collect();
+                let data_q: Vec<i16> = buf.channel_iter::<i16>(&(chans[1])).collect();
+                for i in 0..512 {
+                    fftin[i] = fftw::types::c64::new((data_i[i] as f64), (data_q[i] as f64));
                 }
                 s.send((Utc::now())).unwrap();
             }

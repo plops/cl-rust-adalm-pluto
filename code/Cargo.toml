@@ -16,6 +16,7 @@ crossbeam-channel = "*"
 #positioned-io = "*"
 core_affinity = "*"
 industrial-io = "*" # 0.2.0
+fftw = "*"
 
 # this shaves 1MB off the binary
 [profile.release]
