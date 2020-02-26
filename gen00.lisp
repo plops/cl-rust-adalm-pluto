@@ -307,6 +307,10 @@ panic = \"abort\"
 				;; https://docs.rs/triple_buffer/5.0.4/triple_buffer/
 				;; https://medium.com/@polyglot_factotum/rust-concurrency-patterns-communicate-by-sharing-your-sender-11a496ce7791
 				;; https://wiki.analog.com/resources/tools-software/linux-software/libiio_internals
+				;; 2017-03 https://users.rust-lang.org/t/spmc-buffer-triple-buffering-for-multiple-consumers/10118
+				;; 2017-11 https://users.rust-lang.org/t/code-review-triplebuffer-for-sending-huge-objects-between-threads/13787/7
+				;; https://github.com/HadrienG2/triple-buffer consumer is not in sync with producer
+				
 				,(let ((n-buf 3)
 				       (n-samples 512))
 				  `(do0 
