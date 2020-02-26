@@ -110,22 +110,6 @@ impl System {
     }
 }
 fn main() {
-    let (s, r) = crossbeam_channel::bounded(3);
-    let history = std::sync::Arc::new(Mutex::new(VecDeque::with_capacity(100)));
-    {
-        let b = std::thread::Builder::new().name("deque_writer".into());
-        let history = history.clone();
-        b.spawn(move || {
-            loop {
-                let tup = r.recv().ok().unwrap();
-                let mut h = history.lock().unwrap();
-                h.push_back(tup);
-                if 100 < h.len() {
-                    h.pop_front();
-                };
-            }
-        });
-    }
     {
         let core_ids = core_affinity::get_core_ids().unwrap();
         for a in core_ids {
@@ -222,6 +206,7 @@ fn main() {
                     );
                 }
             };
+            let (s, r) = crossbeam_channel::bounded(3);
             let mut buf = dev.create_buffer(512, false).unwrap_or_else(|err| {
                 {
                     println!(
@@ -234,53 +219,66 @@ fn main() {
                 }
                 std::process::exit(3);
             });
-            let mut fftin = [
-                std::sync::Arc::new(Mutex::new(fftw::array::AlignedVec::new(512))),
-                std::sync::Arc::new(Mutex::new(fftw::array::AlignedVec::new(512))),
-                std::sync::Arc::new(Mutex::new(fftw::array::AlignedVec::new(512))),
-            ];
+            let mut fftin = fftw::array::AlignedVec::new(512);
             let mut chans = Vec::new();
             let mut count = 0;
             for ch in dev.channels() {
                 chans.push(ch);
             }
-            loop {
-                match buf.refill() {
-                    Err(err) => {
+            crossbeam_utils::thread::scope(|scope| {
+                scope.spawn(|_| {
+                    loop {
+                        let tup = r.recv().ok().unwrap();
                         {
-                            println!(
-                                "{} {}:{} error filling buffer  err={:?}",
-                                Utc::now(),
-                                file!(),
-                                line!(),
-                                err
-                            );
+                            println!("{} {}:{}   tup={:?}", Utc::now(), file!(), line!(), tup);
+                        };
+                    }
+                });
+                loop {
+                    match buf.refill() {
+                        Err(err) => {
+                            {
+                                println!(
+                                    "{} {}:{} error filling buffer  err={:?}",
+                                    Utc::now(),
+                                    file!(),
+                                    line!(),
+                                    err
+                                );
+                            }
+                            std::process::exit(4)
                         }
-                        std::process::exit(4)
+                        _ => (),
                     }
-                    _ => (),
-                }
-                {
-                    let mut fftin_guard = fftin[count].clone();
-                    let mut fftin_array = fftin_guard.lock().unwrap();
-                    let data_i: Vec<i16> = buf.channel_iter::<i16>(&(chans[0])).collect();
-                    let data_q: Vec<i16> = buf.channel_iter::<i16>(&(chans[1])).collect();
-                    for i in 0..512 {
-                        fftin_array[i] =
-                            fftw::types::c64::new((data_i[i] as f64), (data_q[i] as f64));
+                    {
+                        let data_i: Vec<i16> = buf.channel_iter::<i16>(&(chans[0])).collect();
+                        let data_q: Vec<i16> = buf.channel_iter::<i16>(&(chans[1])).collect();
+                        for i in 0..512 {
+                            fftin[i] =
+                                fftw::types::c64::new((data_i[i] as f64), (data_q[i] as f64));
+                        }
                     }
+                    {
+                        println!(
+                            "{} {}:{} sender  count={:?}",
+                            Utc::now(),
+                            file!(),
+                            line!(),
+                            count
+                        );
+                    }
+                    s.send((Utc::now(), count)).unwrap();
+                    count += 1;
+                    if (3) <= (count) {
+                        count = 0;
+                    };
                 }
-                s.send((Utc::now(), count, fftin[count].clone())).unwrap();
-                count += 1;
-                if (3) <= (count) {
-                    count = 0;
-                };
-            }
+            })
+            .unwrap();
         });
     };
     {
         let system = init(file!());
-        let history = history.clone();
         system.main_loop(move |_, ui| {
             Window::new(im_str!("Hello world"))
                 .size([3.00e+2, 1.00e+2], Condition::FirstUseEver)

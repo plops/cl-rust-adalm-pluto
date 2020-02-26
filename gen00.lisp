@@ -53,6 +53,7 @@ imgui-glium-renderer = \"*\"
 imgui-winit-support = \"*\"
 chrono = \"*\"
 crossbeam-channel = \"*\"
+crossbeam-utils = \"*\"
 #positioned-io = \"*\"
 core_affinity = \"*\"
 industrial-io = \"*\" # 0.2.0
@@ -213,14 +214,14 @@ panic = \"abort\"
 							  &event)))))))))))
 	   
 	   (defun main ()
-	     (let (((values s r) (crossbeam_channel--bounded 3))
-		   (history (std--sync--Arc--new (Mutex--new (VecDeque--with_capacity 100)))))
-	       (progn
+	     (let (; ((values s r) (crossbeam_channel--bounded 3))
+		   #+nil (history (std--sync--Arc--new (Mutex--new (VecDeque--with_capacity 100)))))
+	       #+nil (progn
 		 (let ((b (dot (std--thread--Builder--new)
 			       (name (dot (string "deque_writer")
 					  (into)))))
 		       (history (dot history (clone))))
-		   (b.spawn
+		  (b.spawn
 		    (space move
 			   (lambda ()
 			     (loop
@@ -314,61 +315,70 @@ panic = \"abort\"
 				;; https://stjepang.github.io/2019/01/29/lock-free-rust-crossbeam-in-2019.html scoped thread, atomic cell
 				,(let ((n-buf 3)
 				       (n-samples 512))
-				  `(do0 
-				    (let* ((buf (dot dev
-							;; cyclic buffer only makes sense for output (to repeat waveform)
-						     (create_buffer ,n-samples false)
-						     (unwrap_or_else (lambda (err)
-								       ,(logprint (format nil "can't create buffer") `(err))
-								       (std--process--exit 3)))))
-					   (fftin (list ,@(loop for i below n-buf collect
-							       `(std--sync--Arc--new (Mutex--new (fftw--array--AlignedVec--new ,n-samples))))))
+				   `(do0
+				     (let (((values s r) (crossbeam_channel--bounded 3)))
+				      (let* ((buf (dot dev
+						       ;; cyclic buffer only makes sense for output (to repeat waveform)
+						       (create_buffer ,n-samples false)
+						       (unwrap_or_else (lambda (err)
+									 ,(logprint (format nil "can't create buffer") `(err))
+									 (std--process--exit 3)))))
+					     (fftin (fftw--array--AlignedVec--new ,n-samples)
+					       #+nil (list ,@(loop for i below n-buf collect
+								  `(fftw--array--AlignedVec--new ,n-samples))))
 
-					   (chans (Vec--new))
-					   (count 0))
-				      (for (ch (dev.channels))
-					   (chans.push ch))
-				      (loop
-					 (case (buf.refill)
-					   ((Err err)
-						  ,(logprint "error filling buffer" `(err))
-						  (std--process--exit 4))
-					   (t "()"))
-
-
-					 (progn
-					  (let* ((fftin_guard (dot (aref fftin count)
-								  (clone)))
-						(fftin_array (dot fftin_guard
-								  (lock)
-								  (unwrap))))
-					    (let ((data_i (dot buf
-							       (channel_iter--<i16> (ref (aref chans 0)))
-							       (collect)))
-						  (data_q (dot buf
-							       (channel_iter--<i16> (ref (aref chans 1)))
-							       (collect))))
-					      (declare (type Vec<i16> data_i data_q))
-					      (for (i (slice 0 ,n-samples))
-						   (setf (aref fftin_array i) (fftw--types--c64--new (coerce (aref data_i i)
-													     f64)
-												     (coerce (aref data_q i)
-													     f64)))))))
+					     (chans (Vec--new))
+					     (count 0))
+					(for (ch (dev.channels))
+					     (chans.push ch))
+					(dot (crossbeam_utils--thread--scope
+					      (lambda (scope)
+						(scope.spawn (lambda (_)
+							       (loop
+								    (let ((tup (dot r
+										    (recv)
+										    (ok)
+										    (unwrap))))
+								      ,(logprint "" `(tup))))))
+						(loop
+						   (case (buf.refill)
+						     ((Err err)
+						      ,(logprint "error filling buffer" `(err))
+						      (std--process--exit 4))
+						     (t "()"))
+						 
+						 
+						   (progn
+						     (let ((data_i (dot buf
+									(channel_iter--<i16> (ref (aref chans 0)))
+									(collect)))
+							   (data_q (dot buf
+									(channel_iter--<i16> (ref (aref chans 1)))
+									(collect))))
+						       (declare (type Vec<i16> data_i data_q))
+						       (for (i (slice 0 ,n-samples))
+							    (setf (aref fftin i) (fftw--types--c64--new (coerce (aref data_i i)
+														f64)
+													(coerce (aref data_q i)
+														f64))))))
+						   ,(logprint "sender" `(count))
 					 
-					 (dot s
-						    (send
-						     (values (Utc--now)
-							     count
-							     (dot (aref fftin count)
-								  (clone))
-							     ))
-						    (unwrap))
-					 (incf count)
-					 (when (<= ,n-buf count)
-					   (setf count 0)))))))))))))))))
+						   (dot s
+							(send
+							 (values (Utc--now)
+								 count
+								 #+nil (dot (aref fftin count)
+								      (clone))
+								 ))
+							(unwrap))
+						   (incf count)
+						   (when (<= ,n-buf count)
+						     (setf count 0))))
+					      )
+					     (unwrap)))))))))))))))))
 	     (progn
 	       (let ((system (init (file!)))
-		     (history (dot history (clone))))
+		     #+nil (history (dot history (clone))))
 		 (system.main_loop
 		  (space  move
 			  (lambda (_ ui)

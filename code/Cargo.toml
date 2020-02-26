@@ -13,6 +13,7 @@ imgui-glium-renderer = "*"
 imgui-winit-support = "*"
 chrono = "*"
 crossbeam-channel = "*"
+crossbeam-utils = "*"
 #positioned-io = "*"
 core_affinity = "*"
 industrial-io = "*" # 0.2.0
