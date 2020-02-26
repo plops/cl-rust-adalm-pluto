@@ -310,7 +310,8 @@ panic = \"abort\"
 				;; 2017-03 https://users.rust-lang.org/t/spmc-buffer-triple-buffering-for-multiple-consumers/10118
 				;; 2017-11 https://users.rust-lang.org/t/code-review-triplebuffer-for-sending-huge-objects-between-threads/13787/7
 				;; https://github.com/HadrienG2/triple-buffer consumer is not in sync with producer
-				
+				;; https://doc.rust-lang.org/book/ch16-02-message-passing.html
+				;; https://stjepang.github.io/2019/01/29/lock-free-rust-crossbeam-in-2019.html scoped thread, atomic cell
 				,(let ((n-buf 3)
 				       (n-samples 512))
 				  `(do0 
