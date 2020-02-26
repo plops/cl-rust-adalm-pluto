@@ -58,6 +58,7 @@ crossbeam-utils = \"*\"
 core_affinity = \"*\"
 industrial-io = \"*\" # 0.2.0
 fftw = \"*\"
+num-complex = \"*\"
 
 # this shaves 1MB off the binary
 [profile.release]
@@ -95,7 +96,8 @@ panic = \"abort\"
 	   (use (crossbeam_channel bounded)
 		(std collections VecDeque)
 		(std sync Mutex)
-		(fftw))
+		(fftw)
+		(num_complex))
 	   
 
 	   (defstruct0 System
@@ -316,6 +318,13 @@ panic = \"abort\"
 				,(let ((n-buf 1)
 				       (n-samples 512))
 				   `(do0
+				     ;; https://users.rust-lang.org/t/how-can-i-allocate-aligned-memory-in-rust/33293 std::slice::from_raw_parts[_mut]
+				     (defstruct0 SendComplex
+					 (ptr
+					  "fftw::array::AlignedVec<num_complex::Complex<f64>>"
+					  ;"*mut num_complex::Complex<f64>"
+					  ))
+				     "unsafe impl Send for SendComplex {}"
 				     (let (((values s r) (crossbeam_channel--bounded 3))
 					   )
 				      (let* ((buf (dot dev
@@ -329,12 +338,12 @@ panic = \"abort\"
 								 `(std--sync--Arc--new
 								   (Mutex--new
 								    ;;(Vec--new ,n-samples)
-								    (fftw--array--AlignedVec--new ,n-samples)
+								    (make-instance SendComplex :ptr (fftw--array--AlignedVec--new ,n-samples))
 								    ))))
 					        )
 					     (chans (Vec--new))
 					     (count 0))
-					"unsafe impl Send for *mut num_complex::Complex<f64>  {}"
+					
 					(for (ch (dev.channels))
 					     (chans.push ch))
 					(dot (crossbeam_utils--thread--scope
@@ -346,12 +355,17 @@ panic = \"abort\"
 										    (ok)
 										    (unwrap))))
 								      (declare (type usize tup))
-								      (let* ((a (space "&mut" (dot (aref fftin tup)
+								      (let* ((ha (dot (aref fftin tup)
 												   (clone)
+												   ))
+									     (a (space "&mut" (dot ha
 												   (lock)
-												   (unwrap)))))
+												   (unwrap)
+												   ))))
 									,(logprint "" `(tup
-											(aref a 0))))))))
+
+											(aref a.ptr 0)
+											)))))))
 						(loop
 						   (case (buf.refill)
 						     ((Err err)
@@ -361,9 +375,12 @@ panic = \"abort\"
 						   ;; https://users.rust-lang.org/t/solved-how-to-move-non-send-between-threads-or-an-alternative/19928
 						 
 						   (progn
-						     (let* ((a (space "&mut" (dot (aref fftin count)
-								    (lock)
-								    (unwrap)))))
+						     (let* ((ha (dot (aref fftin count)
+										  (clone)
+										))
+							    (a (space "&mut" (dot ha
+										  (lock)
+										  (unwrap)))))
 						      (let ((data_i (dot buf
 									 (channel_iter--<i16> (ref (aref chans 0)))
 									 (collect)))
@@ -374,7 +391,7 @@ panic = \"abort\"
 							    )
 							(declare (type Vec<i16> data_i data_q))
 							(for (i (slice 0 ,n-samples))
-							     (setf (aref a i) (fftw--types--c64--new (coerce (aref data_i i)
+							     (setf (aref a.ptr i) (fftw--types--c64--new (coerce (aref data_i i)
 													     f64)
 												     (coerce (aref data_q i)
 													     f64)))))))

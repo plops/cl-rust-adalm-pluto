@@ -18,6 +18,7 @@ crossbeam-utils = "*"
 core_affinity = "*"
 industrial-io = "*" # 0.2.0
 fftw = "*"
+num-complex = "*"
 
 # this shaves 1MB off the binary
 [profile.release]

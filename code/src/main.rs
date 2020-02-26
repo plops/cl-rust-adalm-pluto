@@ -12,6 +12,7 @@ use imgui::*;
 use imgui::{Context, FontConfig, FontGlyphRanges, FontSource, Ui};
 use imgui_glium_renderer::Renderer;
 use imgui_winit_support::{HiDpiMode, WinitPlatform};
+use num_complex;
 use std::collections::VecDeque;
 use std::fs::File;
 use std::io;
@@ -206,6 +207,10 @@ fn main() {
                     );
                 }
             };
+            struct SendComplex {
+                ptr: fftw::array::AlignedVec<num_complex::Complex<f64>>,
+            }
+            unsafe impl Send for SendComplex {}
             let (s, r) = crossbeam_channel::bounded(3);
             let mut buf = dev.create_buffer(512, false).unwrap_or_else(|err| {
                 {
@@ -219,12 +224,11 @@ fn main() {
                 }
                 std::process::exit(3);
             });
-            let mut fftin = [std::sync::Arc::new(Mutex::new(
-                fftw::array::AlignedVec::new(512),
-            ))];
+            let mut fftin = [std::sync::Arc::new(Mutex::new(SendComplex {
+                ptr: fftw::array::AlignedVec::new(512),
+            }))];
             let mut chans = Vec::new();
             let mut count = 0;
-            unsafe impl Send for *mut num_complex::Complex<f64> {}
             for ch in dev.channels() {
                 chans.push(ch);
             }
@@ -232,15 +236,16 @@ fn main() {
                 scope.spawn(|_| {
                     loop {
                         let tup: usize = r.recv().ok().unwrap();
-                        let mut a = &mut fftin[tup].clone().lock().unwrap();
+                        let mut ha = fftin[tup].clone();
+                        let mut a = &mut ha.lock().unwrap();
                         {
                             println!(
-                                "{} {}:{}   tup={:?}  a[0]={:?}",
+                                "{} {}:{}   tup={:?}  a.ptr[0]={:?}",
                                 Utc::now(),
                                 file!(),
                                 line!(),
                                 tup,
-                                a[0]
+                                a.ptr[0]
                             );
                         };
                     }
@@ -262,11 +267,13 @@ fn main() {
                         _ => (),
                     }
                     {
-                        let mut a = &mut fftin[count].lock().unwrap();
+                        let mut ha = fftin[count].clone();
+                        let mut a = &mut ha.lock().unwrap();
                         let data_i: Vec<i16> = buf.channel_iter::<i16>(&(chans[0])).collect();
                         let data_q: Vec<i16> = buf.channel_iter::<i16>(&(chans[1])).collect();
                         for i in 0..512 {
-                            a[i] = fftw::types::c64::new((data_i[i] as f64), (data_q[i] as f64));
+                            a.ptr[i] =
+                                fftw::types::c64::new((data_i[i] as f64), (data_q[i] as f64));
                         }
                     }
                     {
