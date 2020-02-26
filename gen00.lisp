@@ -327,90 +327,116 @@ panic = \"abort\"
 				     "unsafe impl Send for SendComplex {}"
 				     (let (((values s r) (crossbeam_channel--bounded 3))
 					   )
-				      (let* ((buf (dot dev
-						       ;; cyclic buffer only makes sense for output (to repeat waveform)
-						       (create_buffer ,n-samples false)
-						       (unwrap_or_else (lambda (err)
-									 ,(logprint (format nil "can't create buffer") `(err))
-									 (std--process--exit 3)))))
+
+				       (let* ((buf (dot dev
+							 ;; cyclic buffer only makes sense for output (to repeat waveform)
+							 (create_buffer ,n-samples false)
+							 (unwrap_or_else (lambda (err)
+									   ,(logprint (format nil "can't create buffer") `(err))
+									   (std--process--exit 3)))))
 					     
-					     (fftin (list ,@(loop for i below n-buf collect
-								 `(std--sync--Arc--new
-								   (Mutex--new
-								    ;;(Vec--new ,n-samples)
-								    (make-instance SendComplex :ptr (fftw--array--AlignedVec--new ,n-samples))
-								    ))))
-					        )
-					     (chans (Vec--new))
-					     (count 0))
+					       (fftin (list ,@(loop for i below n-buf collect
+								   `(std--sync--Arc--new
+								     (Mutex--new
+								      (make-instance SendComplex :ptr (fftw--array--AlignedVec--new ,n-samples))
+								      )))))
+					       (fftout (list ,@(loop for i below n-buf collect
+								    `(std--sync--Arc--new
+								      (Mutex--new
+								       (make-instance SendComplex :ptr (fftw--array--AlignedVec--new ,n-samples))
+								       )))))
+					     
+					       (chans (Vec--new))
+					      (count 0))
+					 ,(logprint "start fftw plan" `())
+					(let* ((plan (dot (fftw--plan--C2CPlan--aligned ,(format nil "&[~a]" n-samples)
+											  fftw--types--Sign--Forward
+											  fftw--types--Flag--Measure)
+							    (unwrap))))
+					  (declare (type fftw--plan--C2CPlan64 plan))
+
+					  ,(logprint "finish fftw plan" `())
 					
-					(for (ch (dev.channels))
-					     (chans.push ch))
-					(dot (crossbeam_utils--thread--scope
-					      (lambda (scope)
-						(scope.spawn (lambda (_)
-							       (loop
+					  (for (ch (dev.channels))
+					       (chans.push ch))
+					  (dot (crossbeam_utils--thread--scope
+						(lambda (scope)
+						  (scope.spawn (lambda (_)
+								 (loop
 								    (let ((tup (dot r
 										    (recv)
 										    (ok)
 										    (unwrap))))
 								      (declare (type usize tup))
 								      (let* ((ha (dot (aref fftin tup)
-												   (clone)
-												   ))
+										      (clone)
+										      ))
 									     (a (space "&mut" (dot ha
+												   (lock)
+												   (unwrap)
+												   )))
+									     (hb (dot (aref fftout tup)
+										      (clone)))
+									     (b (space "&mut" (dot hb
 												   (lock)
 												   (unwrap)
 												   ))))
 									,(logprint "" `(tup
 
 											(aref a.ptr 0)
-											)))))))
-						(loop
-						   (case (buf.refill)
-						     ((Err err)
-						      ,(logprint "error filling buffer" `(err))
-						      (std--process--exit 4))
-						     (t "()"))
-						   ;; https://users.rust-lang.org/t/solved-how-to-move-non-send-between-threads-or-an-alternative/19928
+											))
+									#+nil (dot plan
+									     (c2c "&mut a.ptr"
+										  "&mut b.ptr")
+									     (unwrap))
+									)))))
+						  (loop
+						     (case (buf.refill)
+						       ((Err err)
+							,(logprint "error filling buffer" `(err))
+							(std--process--exit 4))
+						       (t "()"))
+						     ;; https://users.rust-lang.org/t/solved-how-to-move-non-send-between-threads-or-an-alternative/19928
 						 
-						   (progn
-						     (let* ((ha (dot (aref fftin count)
-										  (clone)
-										))
-							    (a (space "&mut" (dot ha
-										  (lock)
-										  (unwrap)))))
-						      (let ((data_i (dot buf
-									 (channel_iter--<i16> (ref (aref chans 0)))
-									 (collect)))
-							    (data_q (dot buf
-									 (channel_iter--<i16> (ref (aref chans 1)))
-									 (collect)))
+						     (progn
+						       (let* ((ha (dot (aref fftin count)
+								       (clone)
+								       ))
+							      (a (space "&mut" (dot ha
+										    (lock)
+										    (unwrap)))))
+							 (let ((data_i (dot buf
+									    (channel_iter--<i16> (ref (aref chans 0)))
+									    (collect)))
+							       (data_q (dot buf
+									    (channel_iter--<i16> (ref (aref chans 1)))
+									    (collect)))
 							   
-							    )
-							(declare (type Vec<i16> data_i data_q))
-							(for (i (slice 0 ,n-samples))
-							     (setf (aref a.ptr i) (fftw--types--c64--new (coerce (aref data_i i)
-													     f64)
-												     (coerce (aref data_q i)
-													     f64)))))))
-						   ,(logprint "sender" `(count ))
+							       )
+							   (declare (type Vec<i16> data_i data_q))
+							   (for (i (slice 0 ,n-samples))
+								(setf (aref a.ptr i) (fftw--types--c64--new (coerce (aref data_i i)
+														    f64)
+													    (coerce (aref data_q i)
+														    f64)))))))
+						     ,(logprint "sender" `(count ))
 					 
-						   (dot s
-							(send
-							 count
-							 #+nil (values (Utc--now)
-								 count
-								 #+nil (dot (aref fftin count)
-								      (clone))
-								 ))
-							(unwrap))
-						   (incf count)
-						   (when (<= ,n-buf count)
-						     (setf count 0))))
-					      )
-					     (unwrap)))))))))))))))))
+						     (dot s
+							  (send
+							   count
+							   #+nil (values (Utc--now)
+									 count
+									 #+nil (dot (aref fftin count)
+										    (clone))
+									 ))
+							  (unwrap))
+						     (incf count)
+						     (when (<= ,n-buf count)
+						       (setf count 0))))
+						)
+					       (unwrap))))
+
+				      ))))))))))))))
 	     (progn
 	       (let ((system (init (file!)))
 		     #+nil (history (dot history (clone))))

@@ -227,8 +227,23 @@ fn main() {
             let mut fftin = [std::sync::Arc::new(Mutex::new(SendComplex {
                 ptr: fftw::array::AlignedVec::new(512),
             }))];
+            let mut fftout = [std::sync::Arc::new(Mutex::new(SendComplex {
+                ptr: fftw::array::AlignedVec::new(512),
+            }))];
             let mut chans = Vec::new();
             let mut count = 0;
+            {
+                println!("{} {}:{} start fftw plan ", Utc::now(), file!(), line!());
+            }
+            let mut plan: fftw::plan::C2CPlan64 = fftw::plan::C2CPlan::aligned(
+                &[512],
+                fftw::types::Sign::Forward,
+                fftw::types::Flag::Measure,
+            )
+            .unwrap();
+            {
+                println!("{} {}:{} finish fftw plan ", Utc::now(), file!(), line!());
+            }
             for ch in dev.channels() {
                 chans.push(ch);
             }
@@ -238,6 +253,8 @@ fn main() {
                         let tup: usize = r.recv().ok().unwrap();
                         let mut ha = fftin[tup].clone();
                         let mut a = &mut ha.lock().unwrap();
+                        let mut hb = fftout[tup].clone();
+                        let mut b = &mut hb.lock().unwrap();
                         {
                             println!(
                                 "{} {}:{}   tup={:?}  a.ptr[0]={:?}",
