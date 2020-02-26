@@ -316,17 +316,18 @@ panic = \"abort\"
 				,(let ((n-buf 3)
 				       (n-samples 512))
 				   `(do0
-				     (let (((values s r) (crossbeam_channel--bounded 3)))
+				     (let (((values s r) (crossbeam_channel--bounded 3))
+					   )
 				      (let* ((buf (dot dev
 						       ;; cyclic buffer only makes sense for output (to repeat waveform)
 						       (create_buffer ,n-samples false)
 						       (unwrap_or_else (lambda (err)
 									 ,(logprint (format nil "can't create buffer") `(err))
 									 (std--process--exit 3)))))
-					     (fftin (fftw--array--AlignedVec--new ,n-samples)
-					       #+nil (list ,@(loop for i below n-buf collect
-								  `(fftw--array--AlignedVec--new ,n-samples))))
-
+					     
+					     (fftin (list ,@(loop for i below n-buf collect
+								 `(Mutex--new (fftw--array--AlignedVec--new ,n-samples))))
+					        )
 					     (chans (Vec--new))
 					     (count 0))
 					(for (ch (dev.channels))
@@ -339,33 +340,44 @@ panic = \"abort\"
 										    (recv)
 										    (ok)
 										    (unwrap))))
-								      ,(logprint "" `(tup))))))
+								      (declare (type usize tup))
+								      (let* ((a (space "&mut" (dot (aref fftin tup)
+												   (lock)
+												   (unwrap)))))
+									,(logprint "" `(tup
+											(aref a 0))))))))
 						(loop
 						   (case (buf.refill)
 						     ((Err err)
 						      ,(logprint "error filling buffer" `(err))
 						      (std--process--exit 4))
 						     (t "()"))
-						 
+						   ;; https://users.rust-lang.org/t/solved-how-to-move-non-send-between-threads-or-an-alternative/19928
 						 
 						   (progn
-						     (let ((data_i (dot buf
-									(channel_iter--<i16> (ref (aref chans 0)))
-									(collect)))
-							   (data_q (dot buf
-									(channel_iter--<i16> (ref (aref chans 1)))
-									(collect))))
-						       (declare (type Vec<i16> data_i data_q))
-						       (for (i (slice 0 ,n-samples))
-							    (setf (aref fftin i) (fftw--types--c64--new (coerce (aref data_i i)
-														f64)
-													(coerce (aref data_q i)
-														f64))))))
-						   ,(logprint "sender" `(count))
+						     (let* ((a (space "&mut" (dot (aref fftin count)
+								    (lock)
+								    (unwrap)))))
+						      (let ((data_i (dot buf
+									 (channel_iter--<i16> (ref (aref chans 0)))
+									 (collect)))
+							    (data_q (dot buf
+									 (channel_iter--<i16> (ref (aref chans 1)))
+									 (collect)))
+							   
+							    )
+							(declare (type Vec<i16> data_i data_q))
+							(for (i (slice 0 ,n-samples))
+							     (setf (aref a i) (fftw--types--c64--new (coerce (aref data_i i)
+													     f64)
+												     (coerce (aref data_q i)
+													     f64)))))))
+						   ,(logprint "sender" `(count ))
 					 
 						   (dot s
 							(send
-							 (values (Utc--now)
+							 count
+							 #+nil (values (Utc--now)
 								 count
 								 #+nil (dot (aref fftin count)
 								      (clone))

@@ -219,7 +219,11 @@ fn main() {
                 }
                 std::process::exit(3);
             });
-            let mut fftin = fftw::array::AlignedVec::new(512);
+            let mut fftin = [
+                Mutex::new(fftw::array::AlignedVec::new(512)),
+                Mutex::new(fftw::array::AlignedVec::new(512)),
+                Mutex::new(fftw::array::AlignedVec::new(512)),
+            ];
             let mut chans = Vec::new();
             let mut count = 0;
             for ch in dev.channels() {
@@ -228,9 +232,17 @@ fn main() {
             crossbeam_utils::thread::scope(|scope| {
                 scope.spawn(|_| {
                     loop {
-                        let tup = r.recv().ok().unwrap();
+                        let tup: usize = r.recv().ok().unwrap();
+                        let mut a = &mut fftin[tup].lock().unwrap();
                         {
-                            println!("{} {}:{}   tup={:?}", Utc::now(), file!(), line!(), tup);
+                            println!(
+                                "{} {}:{}   tup={:?}  a[0]={:?}",
+                                Utc::now(),
+                                file!(),
+                                line!(),
+                                tup,
+                                a[0]
+                            );
                         };
                     }
                 });
@@ -251,11 +263,11 @@ fn main() {
                         _ => (),
                     }
                     {
+                        let mut a = &mut fftin[count].lock().unwrap();
                         let data_i: Vec<i16> = buf.channel_iter::<i16>(&(chans[0])).collect();
                         let data_q: Vec<i16> = buf.channel_iter::<i16>(&(chans[1])).collect();
                         for i in 0..512 {
-                            fftin[i] =
-                                fftw::types::c64::new((data_i[i] as f64), (data_q[i] as f64));
+                            a[i] = fftw::types::c64::new((data_i[i] as f64), (data_q[i] as f64));
                         }
                     }
                     {
@@ -267,7 +279,7 @@ fn main() {
                             count
                         );
                     }
-                    s.send((Utc::now(), count)).unwrap();
+                    s.send(count).unwrap();
                     count += 1;
                     if (3) <= (count) {
                         count = 0;
