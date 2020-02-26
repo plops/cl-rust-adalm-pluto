@@ -326,10 +326,15 @@ panic = \"abort\"
 									 (std--process--exit 3)))))
 					     
 					     (fftin (list ,@(loop for i below n-buf collect
-								 `(std--sync--Arc--new (Mutex--new (fftw--array--AlignedVec--new ,n-samples)))))
+								 `(std--sync--Arc--new
+								   (Mutex--new
+								    ;;(Vec--new ,n-samples)
+								    (fftw--array--AlignedVec--new ,n-samples)
+								    ))))
 					        )
 					     (chans (Vec--new))
 					     (count 0))
+					"unsafe impl Send for *mut num_complex::Complex<f64>  {}"
 					(for (ch (dev.channels))
 					     (chans.push ch))
 					(dot (crossbeam_utils--thread--scope

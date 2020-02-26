@@ -224,6 +224,7 @@ fn main() {
             ))];
             let mut chans = Vec::new();
             let mut count = 0;
+            unsafe impl Send for *mut num_complex::Complex<f64> {}
             for ch in dev.channels() {
                 chans.push(ch);
             }
