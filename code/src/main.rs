@@ -264,7 +264,8 @@ fn main() {
                                 tup,
                                 a.ptr[0]
                             );
-                        };
+                        }
+                        plan.c2c(&mut a.ptr, &mut b.ptr).unwrap();
                     }
                 });
                 loop {

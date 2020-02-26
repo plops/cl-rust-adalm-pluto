@@ -385,7 +385,7 @@ panic = \"abort\"
 
 											(aref a.ptr 0)
 											))
-									#+nil (dot plan
+									(dot plan
 									     (c2c "&mut a.ptr"
 										  "&mut b.ptr")
 									     (unwrap))
