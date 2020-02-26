@@ -219,11 +219,9 @@ fn main() {
                 }
                 std::process::exit(3);
             });
-            let mut fftin = [
-                Mutex::new(fftw::array::AlignedVec::new(512)),
-                Mutex::new(fftw::array::AlignedVec::new(512)),
-                Mutex::new(fftw::array::AlignedVec::new(512)),
-            ];
+            let mut fftin = [std::sync::Arc::new(Mutex::new(
+                fftw::array::AlignedVec::new(512),
+            ))];
             let mut chans = Vec::new();
             let mut count = 0;
             for ch in dev.channels() {
@@ -233,7 +231,7 @@ fn main() {
                 scope.spawn(|_| {
                     loop {
                         let tup: usize = r.recv().ok().unwrap();
-                        let mut a = &mut fftin[tup].lock().unwrap();
+                        let mut a = &mut fftin[tup].clone().lock().unwrap();
                         {
                             println!(
                                 "{} {}:{}   tup={:?}  a[0]={:?}",
@@ -281,7 +279,7 @@ fn main() {
                     }
                     s.send(count).unwrap();
                     count += 1;
-                    if (3) <= (count) {
+                    if (1) <= (count) {
                         count = 0;
                     };
                 }

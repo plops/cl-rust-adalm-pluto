@@ -313,7 +313,7 @@ panic = \"abort\"
 				;; https://github.com/HadrienG2/triple-buffer consumer is not in sync with producer
 				;; https://doc.rust-lang.org/book/ch16-02-message-passing.html
 				;; https://stjepang.github.io/2019/01/29/lock-free-rust-crossbeam-in-2019.html scoped thread, atomic cell
-				,(let ((n-buf 3)
+				,(let ((n-buf 1)
 				       (n-samples 512))
 				   `(do0
 				     (let (((values s r) (crossbeam_channel--bounded 3))
@@ -326,7 +326,7 @@ panic = \"abort\"
 									 (std--process--exit 3)))))
 					     
 					     (fftin (list ,@(loop for i below n-buf collect
-								 `(Mutex--new (fftw--array--AlignedVec--new ,n-samples))))
+								 `(std--sync--Arc--new (Mutex--new (fftw--array--AlignedVec--new ,n-samples)))))
 					        )
 					     (chans (Vec--new))
 					     (count 0))
@@ -342,6 +342,7 @@ panic = \"abort\"
 										    (unwrap))))
 								      (declare (type usize tup))
 								      (let* ((a (space "&mut" (dot (aref fftin tup)
+												   (clone)
 												   (lock)
 												   (unwrap)))))
 									,(logprint "" `(tup
