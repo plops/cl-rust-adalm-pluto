@@ -8,6 +8,7 @@ use glium::glutin;
 use glium::glutin::event::{Event, WindowEvent};
 use glium::glutin::event_loop::{ControlFlow, EventLoop};
 use glium::glutin::window::WindowBuilder;
+use glium::GlObject;
 use glium::{Display, Surface};
 use imgui::*;
 use imgui::{Context, FontConfig, FontGlyphRanges, FontSource, Ui};
@@ -270,7 +271,8 @@ fn main() {
             128,
         )
         .unwrap();
-        let texture_id = imgui::render::renderer::TextureId::from(empty_texture.get_id());
+        let texture_id =
+            imgui::render::renderer::TextureId::from((empty_texture.get_id() as usize));
         system.main_loop(move |_, ui| {
             Window::new(im_str!("Hello world"))
                 .size([3.00e+2, 1.00e+2], Condition::FirstUseEver)
@@ -281,9 +283,7 @@ fn main() {
                 });
             Window::new(im_str!("texture"))
                 .size([2.00e+2, 1.00e+2], Condition::FirstUseEver)
-                .build(ui, || {
-                    imgui::widget::image::Image::new(texture_id, [8192., 128.]);
-                });
+                .build(ui, || {});
         });
     }
 }

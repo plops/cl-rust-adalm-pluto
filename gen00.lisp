@@ -84,6 +84,7 @@ panic = \"abort\"
 			       "{Display,Surface}")
 		 collect
 		   `(use (glium ,e))))
+	   (use (glium GlObject))
 	   (use (imgui (curly Context FontConfig FontGlyphRanges FontSource Ui))
 		(imgui_glium_renderer Renderer)
 		(imgui_winit_support (curly HiDpiMode WinitPlatform)))
@@ -445,7 +446,7 @@ panic = \"abort\"
 				128)
 				   (unwrap)))
 		     (texture_id (imgui--render--renderer--TextureId--from
-						(empty_texture.get_id))))
+						(coerce (empty_texture.get_id) usize))))
 		 (system.main_loop
 		  (space  move
 			  (lambda (_ ui)
@@ -469,7 +470,7 @@ panic = \"abort\"
 					(lambda ()
 					  ;; https://github.com/glium/glium/blob/master/tests/texture_creation.rs
 					  ;; https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
-					  (imgui--widget--image--Image--new texture_id (list 8192s0 128s0))
+					  ;;(imgui--image--Image--new texture_id (list 8192s0 128s0))
 					  #+nil (let ((system_guard (system_orig.clone))
 						(system (dot system_guard (lock) (unwrap)))
 						      (texture (glium--texture--Texture2d--empty_with_format
