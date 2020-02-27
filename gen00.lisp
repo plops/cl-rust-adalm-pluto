@@ -113,14 +113,14 @@ panic = \"abort\"
 	     (renderer Renderer)
 	     (font_size f32))
 
-	   (space "impl<'ui> Ui<'ui>"
+	   #+nil (space "impl<'ui> Ui<'ui>"
 		  (progn
 		    (space pub
 			   (defun "draw_image<'p>" ("&self"
 						    "texture_id: &'p usize"
-						    "size: &'p [f32, 2]")
+						    "size: &'p [f32; 2]")
 			     (declare (values "Image<'ui,'p>"))
-			     (return (imgui--widget--image--Image--new texture_id size))))))
+			     (return (imgui--widget--image--Image--new self texture_id size))))))
 	   
 	   (defun init ("title: &str")
 	     (declare (values System))
@@ -483,7 +483,8 @@ panic = \"abort\"
 					(lambda ()
 					  ;; https://github.com/glium/glium/blob/master/tests/texture_creation.rs
 					  ;; https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
-					  (imgui--widget--image--Image--new texture_id (list 8192s0 128s0))
+					  (let ((img (imgui--widget--image--Image--new texture_id (list 8192s0 128s0))))
+					    (img.build ui))
 					  #+nil (let ((system_guard (system_orig.clone))
 						(system (dot system_guard (lock) (unwrap)))
 						      (texture (glium--texture--Texture2d--empty_with_format
