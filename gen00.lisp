@@ -113,7 +113,15 @@ panic = \"abort\"
 	     (renderer Renderer)
 	     (font_size f32))
 
-
+	   (space "impl<'ui> Ui<'ui>"
+		  (progn
+		    (space pub
+			   (defun "draw_image<'p>" ("&self"
+						    "texture_id: &'p usize"
+						    "size: &'p [f32, 2]")
+			     (declare (values "Image<'ui,'p>"))
+			     (return (imgui--widget--image--Image--new texture_id size))))))
+	   
 	   (defun init ("title: &str")
 	     (declare (values System))
 	     (let ((title (case (title.rfind (string "/"))
@@ -450,7 +458,8 @@ panic = \"abort\"
 					 (unwrap)))
 		     ;; this needs change in glium/src/lib.rs (add pub infront of "mod render" and "mod widget")
 		     (texture_id (imgui--render--renderer--TextureId--from
-						(coerce (empty_texture.get_id) usize))))
+				  (coerce (empty_texture.get_id) usize)))
+		     )
 		 (system.main_loop
 		  (space  move
 			  (lambda (_ ui)
