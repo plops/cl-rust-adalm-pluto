@@ -306,7 +306,7 @@ panic = \"abort\"
 							 (lambda ()
 							   ,(logprint (format nil "no device named ~a" name) `())
 							   (std--process--exit 2))))))
-				     )
+				     ) 
 
 				(let* ((nchan 0))
 				  (for ("mut chan" (dev.channels))
