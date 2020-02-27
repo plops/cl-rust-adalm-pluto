@@ -321,6 +321,8 @@ panic = \"abort\"
 				   `(do0
 				     ;; https://users.rust-lang.org/t/how-can-i-allocate-aligned-memory-in-rust/33293 std::slice::from_raw_parts[_mut]
 				     (defstruct0 SendComplex
+					 (timestamp "DateTime<Utc>")
+				       
 					 (ptr
 					  "fftw::array::AlignedVec<num_complex::Complex<f64>>"
 					  ;"*mut num_complex::Complex<f64>"
@@ -339,12 +341,12 @@ panic = \"abort\"
 					       (fftin (list ,@(loop for i below n-buf collect
 								   `(std--sync--Arc--new
 								     (Mutex--new
-								      (make-instance SendComplex :ptr (fftw--array--AlignedVec--new ,n-samples))
+								      (make-instance SendComplex :timestamp (Utc--now) :ptr (fftw--array--AlignedVec--new ,n-samples))
 								      )))))
 					       (fftout (list ,@(loop for i below n-buf collect
 								    `(std--sync--Arc--new
 								      (Mutex--new
-								       (make-instance SendComplex :ptr (fftw--array--AlignedVec--new ,n-samples))
+								       (make-instance SendComplex :timestamp (Utc--now) :ptr (fftw--array--AlignedVec--new ,n-samples))
 								       )))))
 					     
 					       (chans (Vec--new))
@@ -391,17 +393,21 @@ panic = \"abort\"
 					;(c (fftw--array--AlignedVec--new ,n-samples))
 					;(d (fftw--array--AlignedVec--new ,n-samples))
 										)
-									   ,(logprint "" `(tup
-
-											   (aref a.ptr 0)
-											   ))
-									   (dot plan
+									   
+									   (do0
+									    (dot plan
 									       
-										(c2c ;"&mut c" "&mut d"
+										 (c2c ;"&mut c" "&mut d"
 					;a.ptr b.ptr
-										 "&mut a.ptr" "&mut b.ptr"
-										 )
-										(unwrap))
+										  "&mut a.ptr" "&mut b.ptr"
+										  )
+										 (unwrap))
+									    (setf b.timestamp (Utc--now)))
+									   ,(logprint "" `(tup
+											   a.timestamp
+											   (aref a.ptr 0)
+											   b.timestamp
+											   ))
 									   ))))))
 
 						   (let* ((count 0))
@@ -414,26 +420,29 @@ panic = \"abort\"
 						       ;; https://users.rust-lang.org/t/solved-how-to-move-non-send-between-threads-or-an-alternative/19928
 						     
 						       (progn
-							 (let* ((ha (dot (aref fftin count)
-									 (clone)
-									 ))
-								(a (space "&mut" (dot ha
-										      (lock)
-										      (unwrap)))))
-							   (let ((data_i (dot buf
-									      (channel_iter--<i16> (ref (aref chans 0)))
-									      (collect)))
-								 (data_q (dot buf
-									      (channel_iter--<i16> (ref (aref chans 1)))
-									      (collect)))
+							 (let ((time_acquisition (Utc--now)))
+							  (let* ((ha (dot (aref fftin count)
+									  (clone)
+									  ))
+								 (a (space "&mut" (dot ha
+										       (lock)
+										       (unwrap)))))
+							    (let ((data_i (dot buf
+									       (channel_iter--<i16> (ref (aref chans 0)))
+									       (collect)))
+								  (data_q (dot buf
+									       (channel_iter--<i16> (ref (aref chans 1)))
+									       (collect)))
 							       
-								 )
-							     (declare (type Vec<i16> data_i data_q))
-							     (for (i (slice 0 ,n-samples))
-								  (setf (aref a.ptr i) (fftw--types--c64--new (coerce (aref data_i i)
-														      f64)
-													      (coerce (aref data_q i)
-														      f64)))))))
+								  )
+							      (declare (type Vec<i16> data_i data_q))
+							      (do0
+							       (setf a.timestamp time_acquisition)
+							       (for (i (slice 0 ,n-samples))
+								    (setf (aref a.ptr i) (fftw--types--c64--new (coerce (aref data_i i)
+															f64)
+														(coerce (aref data_q i)
+															f64)))))))))
 						       ,(logprint "sender" `(count ))
 						     
 						       (dot s
