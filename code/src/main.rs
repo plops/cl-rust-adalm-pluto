@@ -262,6 +262,17 @@ fn main() {
     };
     {
         let system = init(file!());
+        let texture = glium::texture::Texture2d::empty_with_format(
+            &system.display,
+            glium::texture::UncompressedFloatFormat::U8U8U8U8,
+            glium::texture::MipmapsOption::NoMipmap,
+            8192,
+            128,
+        )
+        .unwrap();
+        let texture_id = imgui::render::renderer::TextureId {
+            0: (texture.id as usize),
+        };
         system.main_loop(move |_, ui| {
             Window::new(im_str!("Hello world"))
                 .size([3.00e+2, 1.00e+2], Condition::FirstUseEver)
@@ -273,8 +284,7 @@ fn main() {
             Window::new(im_str!("texture"))
                 .size([2.00e+2, 1.00e+2], Condition::FirstUseEver)
                 .build(ui, || {
-                    let texture = glium::texture::Texture2d::empty_with_format(system.display);
-                    let h_guard = history.lock().unwrap();
+                    imgui::widget::image::Image::new(texture_id, [8192., 128.]);
                 });
         });
     }

@@ -437,7 +437,15 @@ panic = \"abort\"
 						(unwrap)))))))))))))))))))
 	     (progn
 	       (let ((system (init (file!)))
-		     #+nil (history (dot history (clone))))
+		     (texture (dot (glium--texture--Texture2d--empty_with_format
+				&system.display
+				glium--texture--UncompressedFloatFormat--U8U8U8U8
+				glium--texture--MipmapsOption--NoMipmap
+				8192
+				128)
+				   (unwrap)))
+		     (texture_id (make-instance imgui--render--renderer--TextureId :0
+						(coerce texture.id usize))))
 		 (system.main_loop
 		  (space  move
 			  (lambda (_ ui)
@@ -461,10 +469,16 @@ panic = \"abort\"
 					(lambda ()
 					  ;; https://github.com/glium/glium/blob/master/tests/texture_creation.rs
 					  ;; https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
-					  
-					  (let ((texture (glium--texture--Texture2d--empty_with_format
-							  system.display))))
-					  (let ((h_guard (dot history (lock) (unwrap)))
+					  (imgui--widget--image--Image--new texture_id (list 8192s0 128s0))
+					  #+nil (let ((system_guard (system_orig.clone))
+						(system (dot system_guard (lock) (unwrap)))
+						      (texture (glium--texture--Texture2d--empty_with_format
+							  &system.display
+							  glium--texture--UncompressedFloatFormat--U8U8U8U8
+							  glium--texture--MipmapsOption--NoMipmap
+							  8192
+							  128))))
+					  #+nil (let ((h_guard (dot history (lock) (unwrap)))
 						#+nil
 						(h (dot h_guard
 							(Deref)
