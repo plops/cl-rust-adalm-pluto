@@ -72,6 +72,7 @@ panic = \"abort\"
 	   (do0
 	    "extern crate core_affinity;"
 	    "extern crate industrial_io as iio;"
+	    "extern crate imgui;"
 	    (use (std thread spawn))
 	    (use (std io))
 	    (use
@@ -85,6 +86,8 @@ panic = \"abort\"
 		 collect
 		   `(use (glium ,e))))
 	   (use (glium GlObject))
+	   #+nil (use (imgui render)
+		(imgui render renderer TextureId))
 	   (use (imgui (curly Context FontConfig FontGlyphRanges FontSource Ui))
 		(imgui_glium_renderer Renderer)
 		(imgui_winit_support (curly HiDpiMode WinitPlatform)))
@@ -444,7 +447,8 @@ panic = \"abort\"
 				glium--texture--MipmapsOption--NoMipmap
 				8192
 				128)
-				   (unwrap)))
+					 (unwrap)))
+		     ;; this needs change in glium/src/lib.rs (add pub infront of "mod render"
 		     (texture_id (imgui--render--renderer--TextureId--from
 						(coerce (empty_texture.get_id) usize))))
 		 (system.main_loop

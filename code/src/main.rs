@@ -1,4 +1,5 @@
 extern crate core_affinity;
+extern crate imgui;
 extern crate industrial_io as iio;
 use chrono::{DateTime, Utc};
 use crossbeam_channel::bounded;
