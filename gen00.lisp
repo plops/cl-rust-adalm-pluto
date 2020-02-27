@@ -316,7 +316,7 @@ panic = \"abort\"
 				;; https://github.com/HadrienG2/triple-buffer consumer is not in sync with producer
 				;; https://doc.rust-lang.org/book/ch16-02-message-passing.html
 				;; https://stjepang.github.io/2019/01/29/lock-free-rust-crossbeam-in-2019.html scoped thread, atomic cell
-				,(let ((n-buf 1)
+				,(let ((n-buf 3)
 				       (n-samples 512))
 				   `(do0
 				     ;; https://users.rust-lang.org/t/how-can-i-allocate-aligned-memory-in-rust/33293 std::slice::from_raw_parts[_mut]
@@ -348,7 +348,8 @@ panic = \"abort\"
 								       )))))
 					     
 					       (chans (Vec--new))
-					      (count 0))
+					      ;(count 0)
+					      )
 
 					 (let* ()
 					  (do0 
@@ -402,49 +403,51 @@ panic = \"abort\"
 										 )
 										(unwrap))
 									   ))))))
-						   (loop
-						      (case (buf.refill)
-							((Err err)
-							 ,(logprint "error filling buffer" `(err))
-							 (std--process--exit 4))
-							(t "()"))
-						      ;; https://users.rust-lang.org/t/solved-how-to-move-non-send-between-threads-or-an-alternative/19928
+
+						   (let* ((count 0))
+						    (loop
+						       (case (buf.refill)
+							 ((Err err)
+							  ,(logprint "error filling buffer" `(err))
+							  (std--process--exit 4))
+							 (t "()"))
+						       ;; https://users.rust-lang.org/t/solved-how-to-move-non-send-between-threads-or-an-alternative/19928
 						     
-						      (progn
-							(let* ((ha (dot (aref fftin count)
-									(clone)
-									))
-							       (a (space "&mut" (dot ha
-										     (lock)
-										     (unwrap)))))
-							  (let ((data_i (dot buf
-									     (channel_iter--<i16> (ref (aref chans 0)))
-									     (collect)))
-								(data_q (dot buf
-									     (channel_iter--<i16> (ref (aref chans 1)))
-									     (collect)))
+						       (progn
+							 (let* ((ha (dot (aref fftin count)
+									 (clone)
+									 ))
+								(a (space "&mut" (dot ha
+										      (lock)
+										      (unwrap)))))
+							   (let ((data_i (dot buf
+									      (channel_iter--<i16> (ref (aref chans 0)))
+									      (collect)))
+								 (data_q (dot buf
+									      (channel_iter--<i16> (ref (aref chans 1)))
+									      (collect)))
 							       
-								)
-							    (declare (type Vec<i16> data_i data_q))
-							    (for (i (slice 0 ,n-samples))
-								 (setf (aref a.ptr i) (fftw--types--c64--new (coerce (aref data_i i)
-														     f64)
-													     (coerce (aref data_q i)
-														     f64)))))))
-						      ,(logprint "sender" `(count ))
+								 )
+							     (declare (type Vec<i16> data_i data_q))
+							     (for (i (slice 0 ,n-samples))
+								  (setf (aref a.ptr i) (fftw--types--c64--new (coerce (aref data_i i)
+														      f64)
+													      (coerce (aref data_q i)
+														      f64)))))))
+						       ,(logprint "sender" `(count ))
 						     
-						      (dot s
-							   (send
-							    count
-							    #+nil (values (Utc--now)
-									  count
-									  #+nil (dot (aref fftin count)
-										     (clone))
-									  ))
-							   (unwrap))
-						      (incf count)
-						      (when (<= ,n-buf count)
-							(setf count 0))))
+						       (dot s
+							    (send
+							     count
+							     #+nil (values (Utc--now)
+									   count
+									   #+nil (dot (aref fftin count)
+										      (clone))
+									   ))
+							    (unwrap))
+						       (incf count)
+						       (when (<= ,n-buf count)
+							 (setf count 0)))))
 						 )
 						(unwrap)))))
 

@@ -225,14 +225,29 @@ fn main() {
                 }
                 std::process::exit(3);
             });
-            let mut fftin = [std::sync::Arc::new(Mutex::new(SendComplex {
-                ptr: fftw::array::AlignedVec::new(512),
-            }))];
-            let mut fftout = [std::sync::Arc::new(Mutex::new(SendComplex {
-                ptr: fftw::array::AlignedVec::new(512),
-            }))];
+            let mut fftin = [
+                std::sync::Arc::new(Mutex::new(SendComplex {
+                    ptr: fftw::array::AlignedVec::new(512),
+                })),
+                std::sync::Arc::new(Mutex::new(SendComplex {
+                    ptr: fftw::array::AlignedVec::new(512),
+                })),
+                std::sync::Arc::new(Mutex::new(SendComplex {
+                    ptr: fftw::array::AlignedVec::new(512),
+                })),
+            ];
+            let mut fftout = [
+                std::sync::Arc::new(Mutex::new(SendComplex {
+                    ptr: fftw::array::AlignedVec::new(512),
+                })),
+                std::sync::Arc::new(Mutex::new(SendComplex {
+                    ptr: fftw::array::AlignedVec::new(512),
+                })),
+                std::sync::Arc::new(Mutex::new(SendComplex {
+                    ptr: fftw::array::AlignedVec::new(512),
+                })),
+            ];
             let mut chans = Vec::new();
-            let mut count = 0;
             for ch in dev.channels() {
                 chans.push(ch);
             }
@@ -269,6 +284,7 @@ fn main() {
                         plan.c2c(&mut a.ptr, &mut b.ptr).unwrap();
                     }
                 });
+                let mut count = 0;
                 loop {
                     match buf.refill() {
                         Err(err) => {
@@ -306,7 +322,7 @@ fn main() {
                     }
                     s.send(count).unwrap();
                     count += 1;
-                    if (1) <= (count) {
+                    if (3) <= (count) {
                         count = 0;
                     };
                 }
