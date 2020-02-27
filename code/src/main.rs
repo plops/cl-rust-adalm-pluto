@@ -217,7 +217,7 @@ fn main() {
                                                 plan.c2c(&mut a.ptr, &mut b.ptr).unwrap();
                                                 b.timestamp=Utc::now();
                         {
-                                                        println!("{} {}:{}   tup={:?}  a.timestamp={:?}  a.ptr[0]={:?}  b.timestamp={:?}", Utc::now(), file!(), line!(), tup, a.timestamp, a.ptr[0], b.timestamp);
+                                                        println!("{} {}:{}   tup={:?}  (b.timestamp-a.timestamp)={:?}  b.ptr[0]={:?}", Utc::now(), file!(), line!(), tup, (b.timestamp-a.timestamp), b.ptr[0]);
 };
 };
 });

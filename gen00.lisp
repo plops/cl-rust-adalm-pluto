@@ -404,9 +404,10 @@ panic = \"abort\"
 										 (unwrap))
 									    (setf b.timestamp (Utc--now)))
 									   ,(logprint "" `(tup
-											   a.timestamp
-											   (aref a.ptr 0)
-											   b.timestamp
+											   (- b.timestamp
+											      a.timestamp)
+											   (aref b.ptr 0)
+											   
 											   ))
 									   ))))))
 
