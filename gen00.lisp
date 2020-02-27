@@ -209,6 +209,7 @@ panic = \"abort\"
 				((make-instance "Event::WindowEvent"
 						:event "WindowEvent::CloseRequested"
 						"..")
+				 ,(logprint "shutting down" `())
 				 (setf *control_flow "ControlFlow::Exit"))
 				(event
 				 (let ((gl_window (display.gl_window)))
@@ -281,7 +282,7 @@ panic = \"abort\"
 				 (if (trigs.is_empty)
 				     ,(logprint "no triggers" `())
 				     (for (s trigs)
-					  (println! (string "triggr {}")
+					  (println! (string "trigger {}")
 						    s))))
 
 			       (let (,@ (loop for (var name) in `((dev cf-ad9361-lpc)
@@ -388,54 +389,36 @@ panic = \"abort\"
 											 (clone)))
 										(b (space "&mut" (dot hb
 												      (lock)
-												      (unwrap)
-												      )))
-					;(c (fftw--array--AlignedVec--new ,n-samples))
-					;(d (fftw--array--AlignedVec--new ,n-samples))
-										)
-									   
+												      (unwrap)))))
 									   (do0
 									    (dot plan
-									       
-										 (c2c ;"&mut c" "&mut d"
-					;a.ptr b.ptr
-										  "&mut a.ptr" "&mut b.ptr"
-										  )
+										 (c2c "&mut a.ptr" "&mut b.ptr")
 										 (unwrap))
 									    (setf b.timestamp (Utc--now)))
-									   ,(logprint "" `(tup
-											   (- b.timestamp
-											      a.timestamp)
-											   (aref b.ptr 0)
-											   
-											   ))
-									   ))))))
-
+									   ,(logprint "" `(tup (- b.timestamp
+												  a.timestamp)
+											       (aref b.ptr 0)))))))))
 						   (let* ((count 0))
-						    (loop
-						       (case (buf.refill)
-							 ((Err err)
-							  ,(logprint "error filling buffer" `(err))
-							  (std--process--exit 4))
-							 (t "()"))
-						       ;; https://users.rust-lang.org/t/solved-how-to-move-non-send-between-threads-or-an-alternative/19928
-						     
-						       (progn
-							 (let ((time_acquisition (Utc--now)))
-							  (let* ((ha (dot (aref fftin count)
-									  (clone)
-									  ))
-								 (a (space "&mut" (dot ha
-										       (lock)
-										       (unwrap)))))
-							    (let ((data_i (dot buf
-									       (channel_iter--<i16> (ref (aref chans 0)))
-									       (collect)))
-								  (data_q (dot buf
-									       (channel_iter--<i16> (ref (aref chans 1)))
-									       (collect)))
-							       
-								  )
+						     (loop
+							(case (buf.refill)
+							  ((Err err)
+							   ,(logprint "error filling buffer" `(err))
+							   (std--process--exit 4))
+							  (t "()"))
+							;; https://users.rust-lang.org/t/solved-how-to-move-non-send-between-threads-or-an-alternative/19928
+							(progn
+							  (let ((time_acquisition (Utc--now)))
+							    (let* ((ha (dot (aref fftin count)
+									    (clone)))
+								   (a (space "&mut" (dot ha
+											 (lock)
+											 (unwrap)))))
+							      (let ((data_i (dot buf
+										 (channel_iter--<i16> (ref (aref chans 0)))
+										 (collect)))
+								    (data_q (dot buf
+										 (channel_iter--<i16> (ref (aref chans 1)))
+										 (collect))))
 							      (declare (type Vec<i16> data_i data_q))
 							      (do0
 							       (setf a.timestamp time_acquisition)
@@ -445,23 +428,13 @@ panic = \"abort\"
 														(coerce (aref data_q i)
 															f64)))))))))
 						       ,(logprint "sender" `(count ))
-						     
-						       (dot s
-							    (send
-							     count
-							     #+nil (values (Utc--now)
-									   count
-									   #+nil (dot (aref fftin count)
-										      (clone))
-									   ))
+							(dot s
+							    (send count)
 							    (unwrap))
-						       (incf count)
-						       (when (<= ,n-buf count)
-							 (setf count 0)))))
-						 )
-						(unwrap)))))
-
-				      ))))))))))))))
+							(incf count)
+							(when (<= ,n-buf count)
+							  (setf count 0))))))
+						(unwrap)))))))))))))))))))
 	     (progn
 	       (let ((system (init (file!)))
 		     #+nil (history (dot history (clone))))
@@ -480,12 +453,17 @@ panic = \"abort\"
 						      (string "mouse: ({:.1},{:.1})")
 						      (aref mouse_pos 0)
 						      (aref mouse_pos 1)))))))
-			    #+nil (dot ("Window::new" (im_str! (string "recv")))
+			    (dot ("Window::new" (im_str! (string "texture")))
 				 (size (list 200.0 100.0)
 				       "Condition::FirstUseEver")
-				 ;; https://github.com/Gekkio/imgui-rs/blob/master/imgui-examples/examples/test_window_impl.rs
-				 #(build ui
+
+				 (build ui
 					(lambda ()
+					  ;; https://github.com/glium/glium/blob/master/tests/texture_creation.rs
+					  ;; https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
+					  
+					  (let ((texture (glium--texture--Texture2d--empty_with_format
+							  system.display))))
 					  (let ((h_guard (dot history (lock) (unwrap)))
 						#+nil
 						(h (dot h_guard

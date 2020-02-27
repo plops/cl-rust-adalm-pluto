@@ -102,6 +102,9 @@ impl System {
                 event: WindowEvent::CloseRequested,
                 ..
             } => {
+                {
+                    println!("{} {}:{} shutting down ", Utc::now(), file!(), line!());
+                }
                 *control_flow = ControlFlow::Exit;
             }
             event => {
@@ -149,7 +152,7 @@ fn main() {
 }
 } else {
                                 for  s in trigs {
-                                        println!("triggr {}", s);
+                                        println!("trigger {}", s);
 }
 };
                         let dev  = ctx.find_device("cf-ad9361-lpc").unwrap_or_else(||{
@@ -266,6 +269,12 @@ fn main() {
                     ui.text(im_str!("Hello World"));
                     let mouse_pos = ui.io().mouse_pos;
                     ui.text(format!("mouse: ({:.1},{:.1})", mouse_pos[0], mouse_pos[1]));
+                });
+            Window::new(im_str!("texture"))
+                .size([2.00e+2, 1.00e+2], Condition::FirstUseEver)
+                .build(ui, || {
+                    let texture = glium::texture::Texture2d::empty_with_format(system.display);
+                    let h_guard = history.lock().unwrap();
                 });
         });
     }
