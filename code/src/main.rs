@@ -284,7 +284,9 @@ fn main() {
                 });
             Window::new(im_str!("texture"))
                 .size([2.00e+2, 1.00e+2], Condition::FirstUseEver)
-                .build(ui, || {});
+                .build(ui, || {
+                    imgui::widget::image::Image::new(texture_id, [8192., 128.]);
+                });
         });
     }
 }

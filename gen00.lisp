@@ -448,7 +448,7 @@ panic = \"abort\"
 				8192
 				128)
 					 (unwrap)))
-		     ;; this needs change in glium/src/lib.rs (add pub infront of "mod render"
+		     ;; this needs change in glium/src/lib.rs (add pub infront of "mod render" and "mod widget")
 		     (texture_id (imgui--render--renderer--TextureId--from
 						(coerce (empty_texture.get_id) usize))))
 		 (system.main_loop
@@ -474,7 +474,7 @@ panic = \"abort\"
 					(lambda ()
 					  ;; https://github.com/glium/glium/blob/master/tests/texture_creation.rs
 					  ;; https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
-					  ;;(imgui--image--Image--new texture_id (list 8192s0 128s0))
+					  (imgui--widget--image--Image--new texture_id (list 8192s0 128s0))
 					  #+nil (let ((system_guard (system_orig.clone))
 						(system (dot system_guard (lock) (unwrap)))
 						      (texture (glium--texture--Texture2d--empty_with_format
