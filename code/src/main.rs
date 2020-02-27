@@ -3,6 +3,7 @@ extern crate industrial_io as iio;
 use chrono::{DateTime, Utc};
 use crossbeam_channel::bounded;
 use fftw;
+use fftw::plan::C2CPlan;
 use glium::glutin;
 use glium::glutin::event::{Event, WindowEvent};
 use glium::glutin::event_loop::{ControlFlow, EventLoop};
@@ -232,23 +233,23 @@ fn main() {
             }))];
             let mut chans = Vec::new();
             let mut count = 0;
-            {
-                println!("{} {}:{} start fftw plan ", Utc::now(), file!(), line!());
-            }
-            let mut plan: fftw::plan::C2CPlan64 = fftw::plan::C2CPlan::aligned(
-                &[512],
-                fftw::types::Sign::Forward,
-                fftw::types::Flag::Measure,
-            )
-            .unwrap();
-            {
-                println!("{} {}:{} finish fftw plan ", Utc::now(), file!(), line!());
-            }
             for ch in dev.channels() {
                 chans.push(ch);
             }
             crossbeam_utils::thread::scope(|scope| {
                 scope.spawn(|_| {
+                    {
+                        println!("{} {}:{} start fftw plan ", Utc::now(), file!(), line!());
+                    }
+                    let mut plan: fftw::plan::C2CPlan64 = fftw::plan::C2CPlan::aligned(
+                        &[512],
+                        fftw::types::Sign::Forward,
+                        fftw::types::Flag::Measure,
+                    )
+                    .unwrap();
+                    {
+                        println!("{} {}:{} finish fftw plan ", Utc::now(), file!(), line!());
+                    }
                     loop {
                         let tup: usize = r.recv().ok().unwrap();
                         let mut ha = fftin[tup].clone();

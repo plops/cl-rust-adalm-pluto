@@ -97,6 +97,7 @@ panic = \"abort\"
 		(std collections VecDeque)
 		(std sync Mutex)
 		(fftw)
+		(fftw plan C2CPlan)
 		(num_complex))
 	   
 
@@ -348,93 +349,104 @@ panic = \"abort\"
 					     
 					       (chans (Vec--new))
 					      (count 0))
-					 ,(logprint "start fftw plan" `())
-					(let* ((plan (dot (fftw--plan--C2CPlan--aligned ,(format nil "&[~a]" n-samples)
-											  fftw--types--Sign--Forward
-											  fftw--types--Flag--Measure)
-							    (unwrap))))
-					  (declare (type fftw--plan--C2CPlan64 plan))
 
-					  ,(logprint "finish fftw plan" `())
-					
-					  (for (ch (dev.channels))
-					       (chans.push ch))
-					  (dot (crossbeam_utils--thread--scope
-						(lambda (scope)
-						  (scope.spawn (lambda (_)
-								 (loop
-								    (let ((tup (dot r
-										    (recv)
-										    (ok)
+					 (let* ()
+					  (do0 
+					  
+
+					  
+					  
+					   (for (ch (dev.channels))
+						(chans.push ch))
+					   (dot (crossbeam_utils--thread--scope
+						 (lambda (scope)
+						   (scope.spawn (lambda (_)
+								  ,(logprint "start fftw plan" `())
+								  (let* ((plan (dot (fftw--plan--C2CPlan--aligned ,(format nil "&[~a]" n-samples)
+														  fftw--types--Sign--Forward
+														  fftw--types--Flag--Measure)
 										    (unwrap))))
-								      (declare (type usize tup))
-								      (let* ((ha (dot (aref fftin tup)
-										      (clone)
-										      ))
-									     (a (space "&mut" (dot ha
-												   (lock)
-												   (unwrap)
-												   )))
-									     (hb (dot (aref fftout tup)
-										      (clone)))
-									     (b (space "&mut" (dot hb
-												   (lock)
-												   (unwrap)
-												   ))))
-									,(logprint "" `(tup
+								    (declare (type fftw--plan--C2CPlan64 plan))
+								    ,(logprint "finish fftw plan" `())
+								    (loop
+								       (let ((tup (dot r
+										       (recv)
+										       (ok)
+										       (unwrap))))
+									 (declare (type usize tup))
+									 (let* ((ha (dot (aref fftin tup)
+											 (clone)
+											 ))
+										(a (space "&mut" (dot ha
+												      (lock)
+												      (unwrap)
+												      )))
+										(hb (dot (aref fftout tup)
+											 (clone)))
+										(b (space "&mut" (dot hb
+												      (lock)
+												      (unwrap)
+												      )))
+					;(c (fftw--array--AlignedVec--new ,n-samples))
+					;(d (fftw--array--AlignedVec--new ,n-samples))
+										)
+									   ,(logprint "" `(tup
 
-											(aref a.ptr 0)
-											))
-									(dot plan
-									     (c2c "&mut a.ptr"
-										  "&mut b.ptr")
-									     (unwrap))
-									)))))
-						  (loop
-						     (case (buf.refill)
-						       ((Err err)
-							,(logprint "error filling buffer" `(err))
-							(std--process--exit 4))
-						       (t "()"))
-						     ;; https://users.rust-lang.org/t/solved-how-to-move-non-send-between-threads-or-an-alternative/19928
-						 
-						     (progn
-						       (let* ((ha (dot (aref fftin count)
-								       (clone)
-								       ))
-							      (a (space "&mut" (dot ha
-										    (lock)
-										    (unwrap)))))
-							 (let ((data_i (dot buf
-									    (channel_iter--<i16> (ref (aref chans 0)))
-									    (collect)))
-							       (data_q (dot buf
-									    (channel_iter--<i16> (ref (aref chans 1)))
-									    (collect)))
-							   
-							       )
-							   (declare (type Vec<i16> data_i data_q))
-							   (for (i (slice 0 ,n-samples))
-								(setf (aref a.ptr i) (fftw--types--c64--new (coerce (aref data_i i)
-														    f64)
-													    (coerce (aref data_q i)
-														    f64)))))))
-						     ,(logprint "sender" `(count ))
-					 
-						     (dot s
-							  (send
-							   count
-							   #+nil (values (Utc--now)
-									 count
-									 #+nil (dot (aref fftin count)
-										    (clone))
-									 ))
-							  (unwrap))
-						     (incf count)
-						     (when (<= ,n-buf count)
-						       (setf count 0))))
-						)
-					       (unwrap))))
+											   (aref a.ptr 0)
+											   ))
+									   (dot plan
+									       
+										(c2c ;"&mut c" "&mut d"
+					;a.ptr b.ptr
+										 "&mut a.ptr" "&mut b.ptr"
+										 )
+										(unwrap))
+									   ))))))
+						   (loop
+						      (case (buf.refill)
+							((Err err)
+							 ,(logprint "error filling buffer" `(err))
+							 (std--process--exit 4))
+							(t "()"))
+						      ;; https://users.rust-lang.org/t/solved-how-to-move-non-send-between-threads-or-an-alternative/19928
+						     
+						      (progn
+							(let* ((ha (dot (aref fftin count)
+									(clone)
+									))
+							       (a (space "&mut" (dot ha
+										     (lock)
+										     (unwrap)))))
+							  (let ((data_i (dot buf
+									     (channel_iter--<i16> (ref (aref chans 0)))
+									     (collect)))
+								(data_q (dot buf
+									     (channel_iter--<i16> (ref (aref chans 1)))
+									     (collect)))
+							       
+								)
+							    (declare (type Vec<i16> data_i data_q))
+							    (for (i (slice 0 ,n-samples))
+								 (setf (aref a.ptr i) (fftw--types--c64--new (coerce (aref data_i i)
+														     f64)
+													     (coerce (aref data_q i)
+														     f64)))))))
+						      ,(logprint "sender" `(count ))
+						     
+						      (dot s
+							   (send
+							    count
+							    #+nil (values (Utc--now)
+									  count
+									  #+nil (dot (aref fftin count)
+										     (clone))
+									  ))
+							   (unwrap))
+						      (incf count)
+						      (when (<= ,n-buf count)
+							(setf count 0))))
+						 )
+						(unwrap)))))
 
 				      ))))))))))))))
 	     (progn
