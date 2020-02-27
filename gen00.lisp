@@ -437,15 +437,15 @@ panic = \"abort\"
 						(unwrap)))))))))))))))))))
 	     (progn
 	       (let ((system (init (file!)))
-		     (texture (dot (glium--texture--Texture2d--empty_with_format
+		     (empty_texture (dot (glium--texture--Texture2d--empty_with_format
 				&system.display
 				glium--texture--UncompressedFloatFormat--U8U8U8U8
 				glium--texture--MipmapsOption--NoMipmap
 				8192
 				128)
 				   (unwrap)))
-		     (texture_id (make-instance imgui--render--renderer--TextureId :0
-						(coerce texture.id usize))))
+		     (texture_id (imgui--render--renderer--TextureId--from
+						(empty_texture.get_id))))
 		 (system.main_loop
 		  (space  move
 			  (lambda (_ ui)

@@ -262,7 +262,7 @@ fn main() {
     };
     {
         let system = init(file!());
-        let texture = glium::texture::Texture2d::empty_with_format(
+        let empty_texture = glium::texture::Texture2d::empty_with_format(
             &system.display,
             glium::texture::UncompressedFloatFormat::U8U8U8U8,
             glium::texture::MipmapsOption::NoMipmap,
@@ -270,9 +270,7 @@ fn main() {
             128,
         )
         .unwrap();
-        let texture_id = imgui::render::renderer::TextureId {
-            0: (texture.id as usize),
-        };
+        let texture_id = imgui::render::renderer::TextureId::from(empty_texture.get_id());
         system.main_loop(move |_, ui| {
             Window::new(im_str!("Hello world"))
                 .size([3.00e+2, 1.00e+2], Condition::FirstUseEver)
