@@ -268,12 +268,22 @@ fn main() {
             &system.display,
             glium::texture::UncompressedFloatFormat::U8U8U8U8,
             glium::texture::MipmapsOption::NoMipmap,
-            8192,
+            128,
             128,
         )
         .unwrap();
         let texture_id =
             imgui::render::renderer::TextureId::from((empty_texture.get_id() as usize));
+        {
+            println!(
+                "{} {}:{} generated texture  empty_texture.get_id()={:?}  texture_id={:?}",
+                Utc::now(),
+                file!(),
+                line!(),
+                empty_texture.get_id(),
+                texture_id
+            );
+        };
         system.main_loop(move |_, ui| {
             Window::new(im_str!("Hello world"))
                 .size([3.00e+2, 1.00e+2], Condition::FirstUseEver)
@@ -285,7 +295,7 @@ fn main() {
             Window::new(im_str!("texture"))
                 .size([2.00e+2, 1.00e+2], Condition::FirstUseEver)
                 .build(ui, || {
-                    let img = imgui::widget::image::Image::new(texture_id, [8192., 128.]);
+                    let img = imgui::widget::image::Image::new(texture_id, [128., 128.]);
                     img.build(ui);
                 });
         });

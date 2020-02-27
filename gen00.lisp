@@ -449,17 +449,21 @@ panic = \"abort\"
 						(unwrap)))))))))))))))))))
 	     (progn
 	       (let ((system (init (file!)))
-		     (empty_texture (dot (glium--texture--Texture2d--empty_with_format
+		     )
+		 (let ((empty_texture (dot (glium--texture--Texture2d--empty_with_format
 				&system.display
 				glium--texture--UncompressedFloatFormat--U8U8U8U8
 				glium--texture--MipmapsOption--NoMipmap
-				8192
+				128
 				128)
 					 (unwrap)))
 		     ;; this needs change in glium/src/lib.rs (add pub infront of "mod render" and "mod widget")
 		     (texture_id (imgui--render--renderer--TextureId--from
-				  (coerce (empty_texture.get_id) usize)))
+				  (coerce (empty_texture.get_id)
+					  usize)))
 		     )
+		 
+		  ,(logprint "generated texture" `((empty_texture.get_id) texture_id)))
 		 (system.main_loop
 		  (space  move
 			  (lambda (_ ui)
@@ -483,7 +487,7 @@ panic = \"abort\"
 					(lambda ()
 					  ;; https://github.com/glium/glium/blob/master/tests/texture_creation.rs
 					  ;; https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
-					  (let ((img (imgui--widget--image--Image--new texture_id (list 8192s0 128s0))))
+					  (let ((img (imgui--widget--image--Image--new texture_id (list 128s0 128s0))))
 					    (img.build ui))
 					  #+nil (let ((system_guard (system_orig.clone))
 						(system (dot system_guard (lock) (unwrap)))
