@@ -487,6 +487,7 @@ panic = \"abort\"
 					(lambda ()
 					  ;; https://github.com/glium/glium/blob/master/tests/texture_creation.rs
 					  ;; https://github.com/ocornut/imgui/wiki/Image-Loading-and-Displaying-Examples
+					  ;; https://medium.com/@tomaka/the-glium-library-5be149d87dc1
 					  (let ((img (imgui--widget--image--Image--new texture_id (list 128s0 128s0))))
 					    (img.build ui))
 					  #+nil (let ((system_guard (system_orig.clone))
