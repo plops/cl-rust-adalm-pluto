@@ -15,7 +15,7 @@
 		     *source-dir*))
   (defun logprint (msg &optional (rest nil))
     `(progn
-       (println! (string ,(format nil "{} {}:{} ~a ~{~a~^ ~}"
+       (println! (string ,(format nil "{} {}>{} {}:{} ~a ~{~a~^ ~}"
 				  msg
 				  (loop for e in rest collect
 				       (format nil " ~a={:?}" (emit-rs :code e)))))
@@ -24,6 +24,10 @@
 			    (expect (string "time went backwards"))
 			    (as_micros))
 		 (Utc--now)
+		 (std--process--id)
+		 (dot (std--thread--current) (name) (expect (string "can't get thread name"))) 
+		 #+nil (dot (std--thread--current)
+		      (name))
 		 (file!)
 		 (line!)
 		 ,@(loop for e in rest collect
@@ -447,6 +451,7 @@ panic = \"abort\"
 	       (let ((system (init (file!)))
 		     )
 		 ;; https://github.com/Gekkio/imgui-rs/blob/master/imgui-examples/examples/custom_textures.rs
+ 		 ;; https://github.com/glium/glium/blob/master/examples/blitting.rs
 		 (let ((empty_texture (dot (glium--texture--Texture2d--empty_with_format
 				&system.display
 				glium--texture--UncompressedFloatFormat--U8U8U8U8
@@ -458,9 +463,15 @@ panic = \"abort\"
 		     (texture_id (imgui--render--renderer--TextureId--from
 				  (coerce (empty_texture.get_id)
 					  usize)))
-		     )
+		       )
+		   
 		 
-		  ,(logprint "generated texture" `((empty_texture.get_id) texture_id)))
+		   ,(logprint "generated texture" `((empty_texture.get_id) texture_id))
+		   (do0
+		    ,(logprint "clear texture" `())
+		    (dot empty_texture
+			 (as_surface)
+			 (clear_color 0s0 0s0 0s0 1s0))))
 		 (system.main_loop
 		  (space  move
 			  (lambda (_ ui)

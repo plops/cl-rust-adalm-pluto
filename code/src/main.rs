@@ -105,7 +105,16 @@ impl System {
                 ..
             } => {
                 {
-                    println!("{} {}:{} shutting down ", Utc::now(), file!(), line!());
+                    println!(
+                        "{} {}>{} {}:{} shutting down ",
+                        Utc::now(),
+                        std::process::id(),
+                        std::thread::current()
+                            .name()
+                            .expect("can't get thread name"),
+                        file!(),
+                        line!()
+                    );
                 }
                 *control_flow = ControlFlow::Exit;
             }
@@ -121,7 +130,17 @@ fn main() {
         let core_ids = core_affinity::get_core_ids().unwrap();
         for a in core_ids {
             {
-                println!("{} {}:{} affinity  a={:?}", Utc::now(), file!(), line!(), a);
+                println!(
+                    "{} {}>{} {}:{} affinity  a={:?}",
+                    Utc::now(),
+                    std::process::id(),
+                    std::thread::current()
+                        .name()
+                        .expect("can't get thread name"),
+                    file!(),
+                    line!(),
+                    a
+                );
             }
         }
         let b = std::thread::Builder::new().name("pluto_reader".into());
@@ -129,7 +148,7 @@ fn main() {
                                     core_affinity::set_for_current(core_affinity::CoreId {id: 0});
                         let ctx  = iio::Context::create_network("192.168.2.1").unwrap_or_else(| err_|{
                                 {
-                                        println!("{} {}:{} couldnt open iio context ", Utc::now(), file!(), line!());
+                                        println!("{} {}>{} {}:{} couldnt open iio context ", Utc::now(), std::process::id(), std::thread::current().name().expect("can't get thread name"), file!(), line!());
 }
                                 std::process::exit(1);
 });
@@ -150,7 +169,7 @@ fn main() {
 }
             if  trigs.is_empty()  {
                                 {
-                                        println!("{} {}:{} no triggers ", Utc::now(), file!(), line!());
+                                        println!("{} {}>{} {}:{} no triggers ", Utc::now(), std::process::id(), std::thread::current().name().expect("can't get thread name"), file!(), line!());
 }
 } else {
                                 for  s in trigs {
@@ -159,13 +178,13 @@ fn main() {
 };
                         let dev  = ctx.find_device("cf-ad9361-lpc").unwrap_or_else(||{
                                 {
-                                        println!("{} {}:{} no device named cf-ad9361-lpc ", Utc::now(), file!(), line!());
+                                        println!("{} {}>{} {}:{} no device named cf-ad9361-lpc ", Utc::now(), std::process::id(), std::thread::current().name().expect("can't get thread name"), file!(), line!());
 }
                                 std::process::exit(2);
 });
             let phy  = ctx.find_device("ad9361-phy").unwrap_or_else(||{
                                 {
-                                        println!("{} {}:{} no device named ad9361-phy ", Utc::now(), file!(), line!());
+                                        println!("{} {}>{} {}:{} no device named ad9361-phy ", Utc::now(), std::process::id(), std::thread::current().name().expect("can't get thread name"), file!(), line!());
 }
                                 std::process::exit(2);
 });
@@ -178,12 +197,12 @@ fn main() {
 }
             if  (0)==(nchan)  {
                                                 {
-                                        println!("{} {}:{} no 16 bit channels found ", Utc::now(), file!(), line!());
+                                        println!("{} {}>{} {}:{} no 16 bit channels found ", Utc::now(), std::process::id(), std::thread::current().name().expect("can't get thread name"), file!(), line!());
 }
                 std::process::exit(1);
 } else {
                                 {
-                                        println!("{} {}:{} 16 bit channels found  nchan={:?}", Utc::now(), file!(), line!(), nchan);
+                                        println!("{} {}>{} {}:{} 16 bit channels found  nchan={:?}", Utc::now(), std::process::id(), std::thread::current().name().expect("can't get thread name"), file!(), line!(), nchan);
 }
 };
                                     struct SendComplex {
@@ -194,7 +213,7 @@ fn main() {
                         let (s, r)  = crossbeam_channel::bounded(3);
                         let mut buf  = dev.create_buffer(512, false).unwrap_or_else(| err|{
                                 {
-                                        println!("{} {}:{} can't create buffer  err={:?}", Utc::now(), file!(), line!(), err);
+                                        println!("{} {}>{} {}:{} can't create buffer  err={:?}", Utc::now(), std::process::id(), std::thread::current().name().expect("can't get thread name"), file!(), line!(), err);
 }
                                 std::process::exit(3);
 });
@@ -207,11 +226,11 @@ fn main() {
             crossbeam_utils::thread::scope(| scope|{
                                 scope.spawn(| _|{
                                         {
-                                                println!("{} {}:{} start fftw plan ", Utc::now(), file!(), line!());
+                                                println!("{} {}>{} {}:{} start fftw plan ", Utc::now(), std::process::id(), std::thread::current().name().expect("can't get thread name"), file!(), line!());
 }
                                                             let mut plan: fftw::plan::C2CPlan64  = fftw::plan::C2CPlan::aligned(&[512], fftw::types::Sign::Forward, fftw::types::Flag::Measure).unwrap();
                     {
-                                                println!("{} {}:{} finish fftw plan ", Utc::now(), file!(), line!());
+                                                println!("{} {}>{} {}:{} finish fftw plan ", Utc::now(), std::process::id(), std::thread::current().name().expect("can't get thread name"), file!(), line!());
 }
                     loop {
                                                                         let tup: usize  = r.recv().ok().unwrap();
@@ -222,7 +241,7 @@ fn main() {
                                                 plan.c2c(&mut a.ptr, &mut b.ptr).unwrap();
                                                 b.timestamp=Utc::now();
                         {
-                                                        println!("{} {}:{}   tup={:?}  (b.timestamp-a.timestamp)={:?}  b.ptr[0]={:?}", Utc::now(), file!(), line!(), tup, (b.timestamp-a.timestamp), b.ptr[0]);
+                                                        println!("{} {}>{} {}:{}   tup={:?}  (b.timestamp-a.timestamp)={:?}  b.ptr[0]={:?}", Utc::now(), std::process::id(), std::thread::current().name().expect("can't get thread name"), file!(), line!(), tup, (b.timestamp-a.timestamp), b.ptr[0]);
 };
 };
 });
@@ -231,7 +250,7 @@ fn main() {
                                         match buf.refill() {
                                                 Err(err) => {
                                                 {
-                                                println!("{} {}:{} error filling buffer  err={:?}", Utc::now(), file!(), line!(), err);
+                                                println!("{} {}>{} {}:{} error filling buffer  err={:?}", Utc::now(), std::process::id(), std::thread::current().name().expect("can't get thread name"), file!(), line!(), err);
 }
                                                 std::process::exit(4)
 },
@@ -251,7 +270,7 @@ fn main() {
 };
 }
                                         {
-                                                println!("{} {}:{} sender  count={:?}", Utc::now(), file!(), line!(), count);
+                                                println!("{} {}>{} {}:{} sender  count={:?}", Utc::now(), std::process::id(), std::thread::current().name().expect("can't get thread name"), file!(), line!(), count);
 }
                                         s.send(count).unwrap();
                                         count += 1 ;
@@ -276,14 +295,31 @@ fn main() {
             imgui::render::renderer::TextureId::from((empty_texture.get_id() as usize));
         {
             println!(
-                "{} {}:{} generated texture  empty_texture.get_id()={:?}  texture_id={:?}",
+                "{} {}>{} {}:{} generated texture  empty_texture.get_id()={:?}  texture_id={:?}",
                 Utc::now(),
+                std::process::id(),
+                std::thread::current()
+                    .name()
+                    .expect("can't get thread name"),
                 file!(),
                 line!(),
                 empty_texture.get_id(),
                 texture_id
             );
-        };
+        }
+        {
+            println!(
+                "{} {}>{} {}:{} clear texture ",
+                Utc::now(),
+                std::process::id(),
+                std::thread::current()
+                    .name()
+                    .expect("can't get thread name"),
+                file!(),
+                line!()
+            );
+        }
+        empty_texture.as_surface().clear_color(0., 0., 0., 1.0);
         system.main_loop(move |_, ui| {
             Window::new(im_str!("Hello world"))
                 .size([3.00e+2, 1.00e+2], Condition::FirstUseEver)
