@@ -283,43 +283,25 @@ fn main() {
     };
     {
         let system = init(file!());
-        let empty_texture = glium::texture::Texture2d::empty_with_format(
-            &system.display,
-            glium::texture::UncompressedFloatFormat::U8U8U8U8,
-            glium::texture::MipmapsOption::NoMipmap,
-            128,
-            128,
-        )
-        .unwrap();
-        let texture_id =
-            imgui::render::renderer::TextureId::from((empty_texture.get_id() as usize));
-        {
-            println!(
-                "{} {}>{} {}:{} generated texture  empty_texture.get_id()={:?}  texture_id={:?}",
-                Utc::now(),
-                std::process::id(),
-                std::thread::current()
-                    .name()
-                    .expect("can't get thread name"),
-                file!(),
-                line!(),
-                empty_texture.get_id(),
-                texture_id
-            );
+        let mut data = Vec::with_capacity(((128) * (128)));
+        for i in 0..128 {
+            for j in 0..128 {
+                data.push((j as u8));
+                data.push((i as u8));
+                data.push(((i + j) as u8));
+            }
         }
-        {
-            println!(
-                "{} {}>{} {}:{} clear texture ",
-                Utc::now(),
-                std::process::id(),
-                std::thread::current()
-                    .name()
-                    .expect("can't get thread name"),
-                file!(),
-                line!()
-            );
-        }
-        empty_texture.as_surface().clear_color(0., 0., 0., 1.0);
+        let ctx = system.display.get_context();
+        let textures = system.renderer.textures();
+        let raw = glium::texture::RawImage2d {
+            data: alloc::borrow::Cow::Owned(data),
+            width: (128 as u32),
+            height: (128 as u32),
+            format: glium::image_format::ClientFormat::U8U8U8,
+        };
+        let gl_texture = glium::texture::Texture2d::new(ctx, raw).expect("new 2d tex");
+        let texture_id = textures.insert(alloc::rc::Rc::new(gl_texture));
+        let my_texture_id = Some(texture_id);
         system.main_loop(move |_, ui| {
             Window::new(im_str!("Hello world"))
                 .size([3.00e+2, 1.00e+2], Condition::FirstUseEver)

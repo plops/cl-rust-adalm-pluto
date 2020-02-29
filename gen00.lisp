@@ -450,9 +450,29 @@ panic = \"abort\"
 	     (progn
 	       (let ((system (init (file!)))
 		     )
-		 ;; https://github.com/Gekkio/imgui-rs/blob/master/imgui-examples/examples/custom_textures.rs
+		 
+		 
  		 ;; https://github.com/glium/glium/blob/master/examples/blitting.rs
-		 (let ((empty_texture (dot (glium--texture--Texture2d--empty_with_format
+		 (let* ((data (Vec--with_capacity (* 128 128))))
+		   ;; https://github.com/Gekkio/imgui-rs/blob/master/imgui-examples/examples/custom_textures.rs
+		   (for (i "0..128")
+			(for (j "0..128")
+			     (data.push (coerce j u8))
+			     (data.push (coerce i u8))
+			     (data.push (coerce (+ i j) u8))
+			     ))
+		   (let ((ctx (system.display.get_context))
+			 (textures (system.renderer.textures))
+			 (raw (make-instance glium--texture--RawImage2d
+					     :data (alloc--borrow--Cow--Owned data)
+					     :width (coerce 128 u32)
+					     :height (coerce 128 u32)
+					     :format glium--image_format--ClientFormat--U8U8U8))
+			 (gl_texture (dot (glium--texture--Texture2d--new ctx raw)
+					  (expect (string "new 2d tex"))))
+			 (texture_id (textures.insert (alloc--rc--Rc--new gl_texture)))
+			 (my_texture_id (Some texture_id)))))
+		 #+nil (let ((empty_texture (dot (glium--texture--Texture2d--empty_with_format
 				&system.display
 				glium--texture--UncompressedFloatFormat--U8U8U8U8
 				glium--texture--MipmapsOption--NoMipmap
