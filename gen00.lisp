@@ -368,10 +368,6 @@ panic = \"abort\"
 
 					 (let* ()
 					  (do0 
-					  
-
-					  
-					  
 					   (for (ch (dev.channels))
 						(chans.push ch))
 					   (dot (crossbeam_utils--thread--scope
@@ -450,6 +446,7 @@ panic = \"abort\"
 	     (progn
 	       (let ((system (init (file!)))
 		     )
+		 ;; https://github.com/Gekkio/imgui-rs/blob/master/imgui-examples/examples/custom_textures.rs
 		 (let ((empty_texture (dot (glium--texture--Texture2d--empty_with_format
 				&system.display
 				glium--texture--UncompressedFloatFormat--U8U8U8U8
