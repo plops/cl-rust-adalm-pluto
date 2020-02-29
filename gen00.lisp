@@ -448,7 +448,7 @@ panic = \"abort\"
 							  (setf count 0))))))
 						(unwrap)))))))))))))))))))
 	     (progn
-	       (let ((system (init (file!)))
+	       (let* ((system (init (file!)))
 		     )
 		 
 		 
@@ -461,16 +461,16 @@ panic = \"abort\"
 			     (data.push (coerce i u8))
 			     (data.push (coerce (+ i j) u8))
 			     ))
-		   (let ((ctx (system.display.get_context))
+		   (let (;(ctx (system.display.get_context))
 			 (textures (system.renderer.textures))
 			 (raw (make-instance glium--texture--RawImage2d
-					     :data (alloc--borrow--Cow--Owned data)
+					     :data (std--borrow--Cow--Owned data)
 					     :width (coerce 128 u32)
 					     :height (coerce 128 u32)
 					     :format glium--image_format--ClientFormat--U8U8U8))
-			 (gl_texture (dot (glium--texture--Texture2d--new ctx raw)
+			 (gl_texture (dot (glium--texture--Texture2d--new (system.display.get_context) raw)
 					  (expect (string "new 2d tex"))))
-			 (texture_id (textures.insert (alloc--rc--Rc--new gl_texture)))
+			 (texture_id (textures.insert (std--rc--Rc--new gl_texture)))
 			 (my_texture_id (Some texture_id)))))
 		 #+nil (let ((empty_texture (dot (glium--texture--Texture2d--empty_with_format
 				&system.display

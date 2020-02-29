@@ -282,7 +282,7 @@ fn main() {
 });
     };
     {
-        let system = init(file!());
+        let mut system = init(file!());
         let mut data = Vec::with_capacity(((128) * (128)));
         for i in 0..128 {
             for j in 0..128 {
@@ -291,16 +291,16 @@ fn main() {
                 data.push(((i + j) as u8));
             }
         }
-        let ctx = system.display.get_context();
         let textures = system.renderer.textures();
         let raw = glium::texture::RawImage2d {
-            data: alloc::borrow::Cow::Owned(data),
+            data: std::borrow::Cow::Owned(data),
             width: (128 as u32),
             height: (128 as u32),
             format: glium::image_format::ClientFormat::U8U8U8,
         };
-        let gl_texture = glium::texture::Texture2d::new(ctx, raw).expect("new 2d tex");
-        let texture_id = textures.insert(alloc::rc::Rc::new(gl_texture));
+        let gl_texture =
+            glium::texture::Texture2d::new(system.display.get_context(), raw).expect("new 2d tex");
+        let texture_id = textures.insert(std::rc::Rc::new(gl_texture));
         let my_texture_id = Some(texture_id);
         system.main_loop(move |_, ui| {
             Window::new(im_str!("Hello world"))
