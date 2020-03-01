@@ -329,19 +329,21 @@ fn main() {
                         height: (4096 as u32),
                         format: glium::texture::ClientFormat::U8U8U8,
                     };
-                    let data_raw = (raw.data.as_ptr() as *const c_void);
+                    let data_raw = (raw.data.as_ptr() as *const std::ffi::c_void);
                     let ctx = system.display.get_context();
-                    ctx.gl.TexSubImage2D(
-                        glium::gl::TEXTURE_2D,
-                        0,
-                        0,
-                        0,
-                        128,
-                        4096,
-                        glium::gl::RGBA,
-                        glium::gl::UNSIGNED_BYTE,
-                        data_raw,
-                    );
+                    unsafe {
+                        ctx.gl.TexSubImage2D(
+                            glium::gl::TEXTURE_2D,
+                            0,
+                            0,
+                            0,
+                            128,
+                            4096,
+                            glium::gl::RGBA,
+                            glium::gl::UNSIGNED_BYTE,
+                            data_raw,
+                        )
+                    };
                     let img = imgui::widget::image::Image::new(texture_id, [128., 4096.]);
                     img.build(ui);
                 });

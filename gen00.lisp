@@ -539,21 +539,23 @@ panic = \"abort\"
 								      :height (coerce ,tex-height u32)
 								      :format glium--texture--ClientFormat--U8U8U8))
 						  (data_raw (coerce (raw.data.as_ptr)
-								    "*const c_void")))
+								    "*const std::ffi::c_void")))
 					       ))
 
 					   
 					   (let ((ctx (system.display.get_context)))
-					     ;; make gl pub in glium/srccontext/mod.rs
-					     (ctx.gl.TexSubImage2D glium--gl--TEXTURE_2D
-								     0 0 0
-								     ,tex-width
-								     ,tex-height
-								     glium--gl--RGBA
+					     ;; make gl pub in glium/src/context/mod.rs
+					     ;; also mod gl in glium/src/lib.rs
+					     (make-instance unsafe
+					      (ctx.gl.TexSubImage2D glium--gl--TEXTURE_2D
+								    0 0 0
+								    ,tex-width
+								    ,tex-height
+								    glium--gl--RGBA
 
-								     glium--gl--UNSIGNED_BYTE
-								     data_raw
-								     ))
+								    glium--gl--UNSIGNED_BYTE
+								    data_raw
+								    )))
 					   (let ((img (imgui--widget--image--Image--new texture_id (list ,(* 1s0 tex-width) ,(* 1s0 tex-height)))))
 					     (img.build ui))
 					   #+nil (let ((system_guard (system_orig.clone))
