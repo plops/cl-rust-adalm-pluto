@@ -64,7 +64,7 @@ fn init(title: &str) -> System {
     };
 }
 impl System {
-    fn main_loop<F: FnMut(&mut bool, &mut Ui) + 'static>(self, mut run_ui: F) {
+    fn main_loop<F: FnMut(&mut bool, &mut Ui, &Display) + 'static>(self, mut run_ui: F) {
         let System {
             event_loop,
             display,
@@ -88,7 +88,7 @@ impl System {
             Event::RedrawRequested(_) => {
                 let mut ui = imgui.frame();
                 let mut run = true;
-                run_ui(&mut run, &mut ui);
+                run_ui(&mut run, &mut ui, &self.display);
                 if !(run) {
                     *control_flow = ControlFlow::Exit;
                 };
@@ -304,7 +304,7 @@ fn main() {
             glium::texture::Texture2d::new(system.display.get_context(), raw).expect("new 2d tex");
         let texture_id = textures.insert(std::rc::Rc::new(gl_texture));
         let my_texture_id = Some(texture_id);
-        system.main_loop(move |_, ui| {
+        system.main_loop(move |_, ui, display| {
             Window::new(im_str!("Hello world"))
                 .size([3.00e+2, 1.00e+2], Condition::FirstUseEver)
                 .build(ui, || {
@@ -330,7 +330,7 @@ fn main() {
                         format: glium::texture::ClientFormat::U8U8U8,
                     };
                     let data_raw = (raw.data.as_ptr() as *const std::ffi::c_void);
-                    let ctx = ui
+                    let ctx = display.get_context();
                     unsafe {
                         ctx.gl.TexSubImage2D(
                             glium::gl::TEXTURE_2D,

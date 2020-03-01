@@ -175,7 +175,7 @@ panic = \"abort\"
 
 
 	    (impl System
-		  (defun "main_loop<F: FnMut(&mut bool,&mut Ui)+'static>"
+		  (defun "main_loop<F: FnMut(&mut bool,&mut Ui,&Display)+'static>"
 		      (self "mut run_ui: F")
 		    (let (((make-instance System
 					  event_loop
@@ -210,7 +210,9 @@ panic = \"abort\"
 				  (let* ((ui (imgui.frame))
 					 (run true))
 				    (run_ui "&mut run"
-					    "&mut ui")
+					    "&mut ui"
+					    "&self.display"
+					    )
 				    (unless run
 				      (setf *control_flow
 					    "ControlFlow::Exit"))
@@ -500,7 +502,12 @@ panic = \"abort\"
 				(clear_color 0s0 0s0 0s0 1s0))))
 		  (system.main_loop
 		   (space  move
-			   (lambda (_ ui)
+			   (lambda (_ ui display
+				    ;"_ : &bool"
+				    ;"ui : &Ui"
+				    ;"display : &Display"
+				    )
+			     ;(declare (type Display display))
 			     (dot ("Window::new" (im_str! (string "Hello world")))
 				  (size (list 300.0 100.0) "Condition::FirstUseEver")
 				  (build ui
@@ -542,21 +549,20 @@ panic = \"abort\"
 								    "*const std::ffi::c_void")))
 					       ))
 
-					   
-					   (let ((ctx ui.ctx ;(system.display.get_context)
-						  ))
-					     ;; make gl pub in glium/src/context/mod.rs
-					     ;; also mod gl in glium/src/lib.rs
-					     (make-instance unsafe
-					      (ctx.gl.TexSubImage2D glium--gl--TEXTURE_2D
-								    0 0 0
-								    ,tex-width
-								    ,tex-height
-								    glium--gl--RGBA
+					   ;; make ctx pub in imgui/src/lib.rs
+					   ;; make gl pub in glium/src/context/mod.rs
+					   ;; also mod gl in glium/src/lib.rs
+					   (let ((ctx (display.get_context)))
+					    (make-instance unsafe
+							   (ctx.gl.TexSubImage2D glium--gl--TEXTURE_2D
+										 0 0 0
+										 ,tex-width
+										 ,tex-height
+										 glium--gl--RGBA
 
-								    glium--gl--UNSIGNED_BYTE
-								    data_raw
-								    )))
+										 glium--gl--UNSIGNED_BYTE
+										 data_raw
+										 )))
 					   (let ((img (imgui--widget--image--Image--new texture_id (list ,(* 1s0 tex-width) ,(* 1s0 tex-height)))))
 					     (img.build ui))
 					   #+nil (let ((system_guard (system_orig.clone))
