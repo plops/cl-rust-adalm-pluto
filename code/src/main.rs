@@ -285,9 +285,9 @@ fn main() {
     };
     {
         let mut system = init(file!());
-        let mut data = Vec::with_capacity(((128) * (128)));
+        let mut data = Vec::with_capacity(((128) * (4096)));
         for i in 0..128 {
-            for j in 0..128 {
+            for j in 0..4096 {
                 data.push((j as u8));
                 data.push((i as u8));
                 data.push(((i + j) as u8));
@@ -297,7 +297,7 @@ fn main() {
         let raw = glium::texture::RawImage2d {
             data: std::borrow::Cow::Owned(data),
             width: (128 as u32),
-            height: (128 as u32),
+            height: (4096 as u32),
             format: glium::texture::ClientFormat::U8U8U8,
         };
         let gl_texture =
@@ -315,7 +315,34 @@ fn main() {
             Window::new(im_str!("texture"))
                 .size([2.00e+2, 1.00e+2], Condition::FirstUseEver)
                 .build(ui, || {
-                    let img = imgui::widget::image::Image::new(texture_id, [128., 128.]);
+                    let mut data = Vec::with_capacity(((128) * (4096)));
+                    for i in 0..128 {
+                        for j in 0..4096 {
+                            data.push((j as u8));
+                            data.push((i as u8));
+                            data.push(((i + j) as u8));
+                        }
+                    }
+                    let raw = glium::texture::RawImage2d {
+                        data: std::borrow::Cow::Owned(data),
+                        width: (128 as u32),
+                        height: (4096 as u32),
+                        format: glium::texture::ClientFormat::U8U8U8,
+                    };
+                    let data_raw = (raw.data.as_ptr() as *const c_void);
+                    let ctx = system.display.get_context();
+                    ctx.gl.TexSubImage2D(
+                        glium::gl::TEXTURE_2D,
+                        0,
+                        0,
+                        0,
+                        128,
+                        4096,
+                        glium::gl::RGBA,
+                        glium::gl::UNSIGNED_BYTE,
+                        data_raw,
+                    );
+                    let img = imgui::widget::image::Image::new(texture_id, [128., 4096.]);
                     img.build(ui);
                 });
         });
