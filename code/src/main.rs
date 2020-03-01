@@ -10,6 +10,7 @@ use glium::glutin;
 use glium::glutin::event::{Event, WindowEvent};
 use glium::glutin::event_loop::{ControlFlow, EventLoop};
 use glium::glutin::window::WindowBuilder;
+use glium::texture::{ClientFormat, RawImage2d};
 use glium::GlObject;
 use glium::{Display, Surface};
 use imgui::*;
@@ -297,7 +298,7 @@ fn main() {
             data: std::borrow::Cow::Owned(data),
             width: (128 as u32),
             height: (128 as u32),
-            format: glium::image_format::ClientFormat::U8U8U8,
+            format: glium::texture::ClientFormat::U8U8U8,
         };
         let gl_texture =
             glium::texture::Texture2d::new(system.display.get_context(), raw).expect("new 2d tex");

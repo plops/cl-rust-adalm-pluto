@@ -89,8 +89,10 @@ panic = \"abort\"
 			       "{Display,Surface}")
 		 collect
 		   `(use (glium ,e))))
-	   (use (glium GlObject))
-	   (use (glium backend Facade))
+	   (use (glium GlObject)
+		(glium backend Facade)
+		(glium texture (curly ClientFormat
+				      RawImage2d)))
 	   #+nil (use (imgui render)
 		(imgui render renderer TextureId))
 	   (use (imgui (curly Context FontConfig FontGlyphRanges FontSource Ui))
@@ -469,7 +471,7 @@ panic = \"abort\"
 					     :data (std--borrow--Cow--Owned data)
 					     :width (coerce 128 u32)
 					     :height (coerce 128 u32)
-					     :format glium--image_format--ClientFormat--U8U8U8))
+					     :format glium--texture--ClientFormat--U8U8U8))
 			 (gl_texture (dot (glium--texture--Texture2d--new (system.display.get_context)
 									  raw)
 					  (expect (string "new 2d tex"))))
