@@ -90,6 +90,7 @@ panic = \"abort\"
 		 collect
 		   `(use (glium ,e))))
 	   (use (glium GlObject))
+	   (use (glium backend Facade))
 	   #+nil (use (imgui render)
 		(imgui render renderer TextureId))
 	   (use (imgui (curly Context FontConfig FontGlyphRanges FontSource Ui))
@@ -109,13 +110,14 @@ panic = \"abort\"
 		(num_complex))
 	   
 
-	   (defstruct0 System
-	       (event_loop "EventLoop<()>")
-	     (display "glium::Display")
-	     (imgui Context)
-	     (platform WinitPlatform)
-	     (renderer Renderer)
-	     (font_size f32))
+	   (space pub
+	    (defstruct0 System
+		(event_loop "EventLoop<()>")
+	      ("pub display" "glium::Display")
+	      (imgui Context)
+	      (platform WinitPlatform)
+	      (renderer Renderer)
+	      (font_size f32)))
 
 	   #+nil (space "impl<'ui> Ui<'ui>"
 		  (progn
@@ -468,7 +470,8 @@ panic = \"abort\"
 					     :width (coerce 128 u32)
 					     :height (coerce 128 u32)
 					     :format glium--image_format--ClientFormat--U8U8U8))
-			 (gl_texture (dot (glium--texture--Texture2d--new (system.display.get_context) raw)
+			 (gl_texture (dot (glium--texture--Texture2d--new (system.display.get_context)
+									  raw)
 					  (expect (string "new 2d tex"))))
 			 (texture_id (textures.insert (std--rc--Rc--new gl_texture)))
 			 (my_texture_id (Some texture_id)))))

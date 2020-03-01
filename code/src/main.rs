@@ -5,6 +5,7 @@ use chrono::{DateTime, Utc};
 use crossbeam_channel::bounded;
 use fftw;
 use fftw::plan::C2CPlan;
+use glium::backend::Facade;
 use glium::glutin;
 use glium::glutin::event::{Event, WindowEvent};
 use glium::glutin::event_loop::{ControlFlow, EventLoop};
@@ -23,9 +24,9 @@ use std::sync::Mutex;
 use std::thread::spawn;
 use std::time::Instant;
 use std::{fs, thread, time};
-struct System {
+pub struct System {
     event_loop: EventLoop<()>,
-    display: glium::Display,
+    pub display: glium::Display,
     imgui: Context,
     platform: WinitPlatform,
     renderer: Renderer,
