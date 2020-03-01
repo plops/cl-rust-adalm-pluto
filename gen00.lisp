@@ -543,7 +543,8 @@ panic = \"abort\"
 					       ))
 
 					   
-					   (let ((ctx (system.display.get_context)))
+					   (let ((ctx ui.ctx ;(system.display.get_context)
+						  ))
 					     ;; make gl pub in glium/src/context/mod.rs
 					     ;; also mod gl in glium/src/lib.rs
 					     (make-instance unsafe

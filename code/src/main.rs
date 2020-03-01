@@ -330,7 +330,7 @@ fn main() {
                         format: glium::texture::ClientFormat::U8U8U8,
                     };
                     let data_raw = (raw.data.as_ptr() as *const std::ffi::c_void);
-                    let ctx = system.display.get_context();
+                    let ctx = ui
                     unsafe {
                         ctx.gl.TexSubImage2D(
                             glium::gl::TEXTURE_2D,
