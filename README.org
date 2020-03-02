@@ -1,6 +1,11 @@
 * Introduction
 
 Rust code to read out data from Adalm Pluto Software Defined Radio.
+This is an attempt using glutin/glium. I feel not comfortable using this framework and abandon this code.
+I switch to glfw and gl-rs in cl-rust-adalm-pluto-glfw.
+
+industrial-io isn't working in windows.
+
 
 
 * References
